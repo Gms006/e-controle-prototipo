@@ -1,3 +1,25 @@
+import {
+  Building2,
+  FileText,
+  DollarSign,
+  Zap,
+  Search,
+  Bell,
+  Star,
+  User,
+  LayoutDashboard,
+  Building,
+  ScrollText,
+  Receipt,
+  FolderKanban,
+  ShieldCheck,
+  BellRing,
+  AlertTriangle,
+  Bookmark,
+  Bot,
+  ChevronRight,
+} from "lucide-react";
+
 export default function Home() {
   return (
     <div className="ec-app-shell">
@@ -7,36 +29,66 @@ export default function Home() {
           <div className="ec-logo"></div>
           <div>
             <b>eControle</b>
-            <span>Neto Contabilidade · Console operacional</span>
+            <span>Neto Contabilidade</span>
           </div>
         </div>
 
         <div>
           <div className="ec-nav-group-title">Principal</div>
           <div className="ec-nav">
-            <div className="ec-nav-item active">Painel Executivo <small>Live</small></div>
-            <div className="ec-nav-item">Empresas <small>1.284</small></div>
-            <div className="ec-nav-item">Licenças <small>312</small></div>
-            <div className="ec-nav-item">Taxas <small>148</small></div>
-            <div className="ec-nav-item">Processos <small>94</small></div>
-            <div className="ec-nav-item">Certificados <small>126</small></div>
+            <div className="ec-nav-item active">
+              <div className="ec-nav-item-left"><LayoutDashboard size={16} strokeWidth={1.8} /> Painel Executivo</div>
+              <small>Live</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><Building size={16} strokeWidth={1.8} /> Empresas</div>
+              <small>1.284</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><ScrollText size={16} strokeWidth={1.8} /> Licenças</div>
+              <small>312</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><Receipt size={16} strokeWidth={1.8} /> Taxas</div>
+              <small>148</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><FolderKanban size={16} strokeWidth={1.8} /> Processos</div>
+              <small>94</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><ShieldCheck size={16} strokeWidth={1.8} /> Certificados</div>
+              <small>126</small>
+            </div>
           </div>
         </div>
 
         <div>
           <div className="ec-nav-group-title">Operação</div>
           <div className="ec-nav">
-            <div className="ec-nav-item">Notificações <small>27</small></div>
-            <div className="ec-nav-item">Filas críticas <small>12</small></div>
-            <div className="ec-nav-item">Views salvas <small>8</small></div>
-            <div className="ec-nav-item">Automação / Jobs <small>3</small></div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><BellRing size={16} strokeWidth={1.8} /> Notificações</div>
+              <small>27</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><AlertTriangle size={16} strokeWidth={1.8} /> Filas críticas</div>
+              <small>12</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><Bookmark size={16} strokeWidth={1.8} /> Views salvas</div>
+              <small>8</small>
+            </div>
+            <div className="ec-nav-item">
+              <div className="ec-nav-item-left"><Bot size={16} strokeWidth={1.8} /> Automação / Jobs</div>
+              <small>3</small>
+            </div>
           </div>
         </div>
 
         <div className="ec-sidebar-card">
           <h4>Centro Operacional</h4>
           <p>
-            Rail esquerdo mais "executivo", sem excesso visual, mas com contadores, atalhos e status útil de operação.
+            Rail executivo com contadores, atalhos e status útil de operação.
           </p>
           <div className="ec-mini">
             <span>Compacto</span>
@@ -56,16 +108,21 @@ export default function Home() {
           </div>
 
           <div className="ec-command">
-            <div>🔎 <strong>Pesquisar ou executar comando</strong> · empresa, CNPJ, protocolo, ação rápida…</div>
-            <div className="ec-kbd">Ctrl + K</div>
+            <div className="ec-command-inner">
+              <Search size={15} strokeWidth={2} className="ec-command-icon" />
+              <span>Pesquisar empresa, CNPJ, protocolo…</span>
+            </div>
+            <div className="ec-kbd">⌘K</div>
           </div>
 
           <div className="ec-top-actions">
-            <div className="ec-ghost">Densidade: Confortável</div>
-            <div className="ec-ghost">Filtros globais · 4</div>
-            <div className="ec-icon-btn">🔔<span className="ec-badge-dot">9</span></div>
-            <div className="ec-icon-btn">☆</div>
-            <div className="ec-icon-btn">👤</div>
+            <div className="ec-ghost">Filtros · 4</div>
+            <div className="ec-icon-btn">
+              <Bell size={18} strokeWidth={1.8} />
+              <span className="ec-badge-dot">9</span>
+            </div>
+            <div className="ec-icon-btn"><Star size={18} strokeWidth={1.8} /></div>
+            <div className="ec-icon-btn"><User size={18} strokeWidth={1.8} /></div>
           </div>
         </div>
 
@@ -77,7 +134,7 @@ export default function Home() {
               <div className="ec-section-head">
                 <div>
                   <small>Contexto</small>
-                  <h3>Empresas — filtros persistentes</h3>
+                  <h3>Filtros persistentes</h3>
                 </div>
                 <div className="ec-chip active">14 ativos</div>
               </div>
@@ -130,27 +187,27 @@ export default function Home() {
 
             <div className="ec-filter-block">
               <p className="ec-filter-label">Views salvas</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div className="ec-saved-view">
                   <div>
                     <b>Empresas críticas</b>
                     <span>Risco alto + cert. vencendo</span>
                   </div>
-                  <div className="ec-dot"></div>
+                  <div className="ec-dot ec-dot-green"></div>
                 </div>
                 <div className="ec-saved-view">
                   <div>
                     <b>Taxas irregulares</b>
                     <span>Anápolis · envio pendente</span>
                   </div>
-                  <div className="ec-dot" style={{ background: "#f59e0b" }}></div>
+                  <div className="ec-dot ec-dot-amber"></div>
                 </div>
                 <div className="ec-saved-view">
                   <div>
                     <b>Processos sem resposta</b>
                     <span>7+ dias úteis</span>
                   </div>
-                  <div className="ec-dot" style={{ background: "#ef4444" }}></div>
+                  <div className="ec-dot ec-dot-red"></div>
                 </div>
               </div>
             </div>
@@ -170,11 +227,11 @@ export default function Home() {
 
             {/* Active Filters */}
             <div className="ec-active-filters">
-              <div className="ec-af">Município: Anápolis ✕</div>
-              <div className="ec-af">Risco: Alto, Médio ✕</div>
-              <div className="ec-af">Certificado: Vencendo, Vencido ✕</div>
-              <div className="ec-af">Status: Ativas ✕</div>
-              <div className="ec-af">Score: 42–100 ✕</div>
+              <div className="ec-af">Município: Anápolis <span className="ec-af-x">×</span></div>
+              <div className="ec-af">Risco: Alto, Médio <span className="ec-af-x">×</span></div>
+              <div className="ec-af">Certificado: Vencendo, Vencido <span className="ec-af-x">×</span></div>
+              <div className="ec-af">Status: Ativas <span className="ec-af-x">×</span></div>
+              <div className="ec-af">Score: 42–100 <span className="ec-af-x">×</span></div>
             </div>
 
             {/* KPI Grid */}
@@ -186,7 +243,7 @@ export default function Home() {
                     <div className="ec-value">184</div>
                     <div className="ec-trend warn">+12 esta semana</div>
                   </div>
-                  <div className="ec-kpi-icon">🏢</div>
+                  <div className="ec-kpi-icon"><Building2 size={20} strokeWidth={1.6} /></div>
                 </div>
                 <div className="ec-spark"></div>
               </div>
@@ -198,14 +255,9 @@ export default function Home() {
                     <div className="ec-value">39</div>
                     <div className="ec-trend warn">17 em até 7 dias</div>
                   </div>
-                  <div className="ec-kpi-icon">📄</div>
+                  <div className="ec-kpi-icon ec-kpi-icon-amber"><FileText size={20} strokeWidth={1.6} /></div>
                 </div>
-                <div className="ec-spark" style={{
-                  background: `
-                    linear-gradient(180deg, rgba(245,158,11,.14), rgba(245,158,11,.02)),
-                    linear-gradient(90deg, transparent 0 8%, rgba(245,158,11,.72) 8% 10%, transparent 10% 18%, rgba(245,158,11,.55) 18% 20%, transparent 20% 34%, rgba(245,158,11,.82) 34% 36%, transparent 36% 49%, rgba(245,158,11,.65) 49% 51%, transparent 51% 70%, rgba(245,158,11,.92) 70% 72%, transparent 72% 80%)`,
-                  borderColor: "#fff1c4"
-                }}></div>
+                <div className="ec-spark ec-spark-amber"></div>
               </div>
 
               <div className="ec-kpi">
@@ -215,7 +267,7 @@ export default function Home() {
                     <div className="ec-value">61</div>
                     <div className="ec-trend warn">22 com envio pendente</div>
                   </div>
-                  <div className="ec-kpi-icon">💰</div>
+                  <div className="ec-kpi-icon"><DollarSign size={20} strokeWidth={1.6} /></div>
                 </div>
                 <div className="ec-spark"></div>
               </div>
@@ -227,14 +279,9 @@ export default function Home() {
                     <div className="ec-value">27</div>
                     <div className="ec-trend up">-8 vs. último ciclo</div>
                   </div>
-                  <div className="ec-kpi-icon">⚡</div>
+                  <div className="ec-kpi-icon ec-kpi-icon-red"><Zap size={20} strokeWidth={1.6} /></div>
                 </div>
-                <div className="ec-spark" style={{
-                  background: `
-                    linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.02)),
-                    linear-gradient(90deg, transparent 0 10%, rgba(239,68,68,.72) 10% 12%, transparent 12% 23%, rgba(239,68,68,.55) 23% 25%, transparent 25% 37%, rgba(239,68,68,.86) 37% 39%, transparent 39% 55%, rgba(239,68,68,.66) 55% 57%, transparent 57% 68%, rgba(239,68,68,.92) 68% 70%, transparent 70% 82%)`,
-                  borderColor: "#ffd9d9"
-                }}></div>
+                <div className="ec-spark ec-spark-red"></div>
               </div>
             </div>
 
@@ -330,7 +377,7 @@ export default function Home() {
                         <td><div className="ec-score">94</div></td>
                         <td>Clínica Santa Helena</td>
                         <td>Processo CERCON</td>
-                        <td><span className="ec-status ec-s-warn">15 dias sem atualização</span></td>
+                        <td><span className="ec-status ec-s-warn">15d sem atualização</span></td>
                       </tr>
                       <tr>
                         <td><div className="ec-score">91</div></td>
@@ -483,7 +530,7 @@ export default function Home() {
               <div className="ec-section-head">
                 <div>
                   <small>Processos</small>
-                  <h3>Kanban operacional com leitura executiva</h3>
+                  <h3>Kanban operacional</h3>
                 </div>
                 <div className="ec-chips">
                   <div className="ec-chip active">Kanban</div>
@@ -529,7 +576,7 @@ export default function Home() {
                     <b>Auto Peças Primavera</b>
                     <span>Alvará Sanitário · vistoria</span>
                     <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-warn">15 dias sem update</i>
+                      <i className="ec-status ec-s-warn">15d sem update</i>
                     </div>
                   </div>
                   <div className="ec-k-card">
@@ -542,7 +589,7 @@ export default function Home() {
                 </div>
 
                 <div className="ec-kanban-col">
-                  <h4>Concluir / Regularizar <span className="ec-chip">3</span></h4>
+                  <h4>Concluir <span className="ec-chip">3</span></h4>
                   <div className="ec-k-card">
                     <b>Mercado Vitória</b>
                     <span>Funcionamento · deferido</span>
