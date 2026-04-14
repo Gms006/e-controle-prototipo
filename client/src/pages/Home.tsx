@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Building2,
   FileText,
@@ -17,10 +18,46 @@ import {
   AlertTriangle,
   Bookmark,
   Bot,
-  ChevronRight,
 } from "lucide-react";
+import EmpresasTab from "@/components/tabs/EmpresasTab";
+import LicencasTab from "@/components/tabs/LicencasTab";
+import TaxasTab from "@/components/tabs/TaxasTab";
+import ProcessosTab from "@/components/tabs/ProcessosTab";
+import CertificadosTab from "@/components/tabs/CertificadosTab";
+
+type TabKey = "painel" | "empresas" | "licencas" | "taxas" | "processos" | "certificados";
+
+const tabs: { key: TabKey; label: string }[] = [
+  { key: "painel", label: "Painel" },
+  { key: "empresas", label: "Empresas" },
+  { key: "licencas", label: "Licenças" },
+  { key: "taxas", label: "Taxas" },
+  { key: "processos", label: "Processos" },
+  { key: "certificados", label: "Certificados" },
+];
+
+const sidebarNav: { key: TabKey; icon: typeof LayoutDashboard; label: string; count: string }[] = [
+  { key: "painel", icon: LayoutDashboard, label: "Painel Executivo", count: "Live" },
+  { key: "empresas", icon: Building, label: "Empresas", count: "1.284" },
+  { key: "licencas", icon: ScrollText, label: "Licenças", count: "312" },
+  { key: "taxas", icon: Receipt, label: "Taxas", count: "148" },
+  { key: "processos", icon: FolderKanban, label: "Processos", count: "94" },
+  { key: "certificados", icon: ShieldCheck, label: "Certificados", count: "126" },
+];
+
+const breadcrumbMap: Record<TabKey, { path: string; title: string }> = {
+  painel: { path: "Painel / Hoje", title: "Operação tributária e regulatória" },
+  empresas: { path: "Empresas / Cadastro", title: "Gestão de empresas" },
+  licencas: { path: "Licenças / Visão geral", title: "Controle de licenças" },
+  taxas: { path: "Taxas / Visão geral", title: "Gestão de taxas municipais" },
+  processos: { path: "Processos / Kanban", title: "Processos regulatórios" },
+  certificados: { path: "Certificados / Visão geral", title: "Certificados digitais" },
+};
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<TabKey>("painel");
+  const bc = breadcrumbMap[activeTab];
+
   return (
     <div className="ec-app-shell">
       {/* Sidebar */}
@@ -36,30 +73,19 @@ export default function Home() {
         <div>
           <div className="ec-nav-group-title">Principal</div>
           <div className="ec-nav">
-            <div className="ec-nav-item active">
-              <div className="ec-nav-item-left"><LayoutDashboard size={16} strokeWidth={1.8} /> Painel Executivo</div>
-              <small>Live</small>
-            </div>
-            <div className="ec-nav-item">
-              <div className="ec-nav-item-left"><Building size={16} strokeWidth={1.8} /> Empresas</div>
-              <small>1.284</small>
-            </div>
-            <div className="ec-nav-item">
-              <div className="ec-nav-item-left"><ScrollText size={16} strokeWidth={1.8} /> Licenças</div>
-              <small>312</small>
-            </div>
-            <div className="ec-nav-item">
-              <div className="ec-nav-item-left"><Receipt size={16} strokeWidth={1.8} /> Taxas</div>
-              <small>148</small>
-            </div>
-            <div className="ec-nav-item">
-              <div className="ec-nav-item-left"><FolderKanban size={16} strokeWidth={1.8} /> Processos</div>
-              <small>94</small>
-            </div>
-            <div className="ec-nav-item">
-              <div className="ec-nav-item-left"><ShieldCheck size={16} strokeWidth={1.8} /> Certificados</div>
-              <small>126</small>
-            </div>
+            {sidebarNav.map(item => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.key}
+                  className={`ec-nav-item ${activeTab === item.key ? "active" : ""}`}
+                  onClick={() => setActiveTab(item.key)}
+                >
+                  <div className="ec-nav-item-left"><Icon size={16} strokeWidth={1.8} /> {item.label}</div>
+                  <small>{item.count}</small>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -103,8 +129,8 @@ export default function Home() {
         {/* Topbar */}
         <div className="ec-topbar">
           <div className="ec-breadcrumb">
-            <div className="ec-k">Painel / Hoje</div>
-            <h2>Operação tributária e regulatória</h2>
+            <div className="ec-k">{bc.path}</div>
+            <h2>{bc.title}</h2>
           </div>
 
           <div className="ec-command">
@@ -217,12 +243,15 @@ export default function Home() {
           <section className="ec-panel">
             {/* Subnav */}
             <div className="ec-subnav">
-              <div className="ec-tab active">Painel</div>
-              <div className="ec-tab">Empresas</div>
-              <div className="ec-tab">Licenças</div>
-              <div className="ec-tab">Taxas</div>
-              <div className="ec-tab">Processos</div>
-              <div className="ec-tab">Certificados</div>
+              {tabs.map(t => (
+                <div
+                  key={t.key}
+                  className={`ec-tab ${activeTab === t.key ? "active" : ""}`}
+                  onClick={() => setActiveTab(t.key)}
+                >
+                  {t.label}
+                </div>
+              ))}
             </div>
 
             {/* Active Filters */}
@@ -234,376 +263,390 @@ export default function Home() {
               <div className="ec-af">Score: 42–100 <span className="ec-af-x">×</span></div>
             </div>
 
-            {/* KPI Grid */}
-            <div className="ec-grid-hero">
-              <div className="ec-kpi">
-                <div className="ec-kpi-top">
-                  <div>
-                    <label>Empresas sob atenção</label>
-                    <div className="ec-value">184</div>
-                    <div className="ec-trend warn">+12 esta semana</div>
-                  </div>
-                  <div className="ec-kpi-icon"><Building2 size={20} strokeWidth={1.6} /></div>
-                </div>
-                <div className="ec-spark"></div>
-              </div>
-
-              <div className="ec-kpi">
-                <div className="ec-kpi-top">
-                  <div>
-                    <label>Licenças vencendo</label>
-                    <div className="ec-value">39</div>
-                    <div className="ec-trend warn">17 em até 7 dias</div>
-                  </div>
-                  <div className="ec-kpi-icon ec-kpi-icon-amber"><FileText size={20} strokeWidth={1.6} /></div>
-                </div>
-                <div className="ec-spark ec-spark-amber"></div>
-              </div>
-
-              <div className="ec-kpi">
-                <div className="ec-kpi-top">
-                  <div>
-                    <label>Taxas irregulares</label>
-                    <div className="ec-value">61</div>
-                    <div className="ec-trend warn">22 com envio pendente</div>
-                  </div>
-                  <div className="ec-kpi-icon"><DollarSign size={20} strokeWidth={1.6} /></div>
-                </div>
-                <div className="ec-spark"></div>
-              </div>
-
-              <div className="ec-kpi">
-                <div className="ec-kpi-top">
-                  <div>
-                    <label>Processos críticos</label>
-                    <div className="ec-value">27</div>
-                    <div className="ec-trend up">-8 vs. último ciclo</div>
-                  </div>
-                  <div className="ec-kpi-icon ec-kpi-icon-red"><Zap size={20} strokeWidth={1.6} /></div>
-                </div>
-                <div className="ec-spark ec-spark-red"></div>
-              </div>
-            </div>
-
-            {/* Wide Grid - Heatmap + Urgency Table */}
-            <div className="ec-wide-grid">
-              <div className="ec-card">
-                <div className="ec-section-head">
-                  <div>
-                    <small>Painel</small>
-                    <h3>Mapa de calor de vencimentos</h3>
-                  </div>
-                  <div className="ec-chip">Últimos 6 meses</div>
-                </div>
-
-                <div className="ec-heatmap">
-                  <div></div>
-                  <div className="ec-month">Abr</div>
-                  <div className="ec-month">Mai</div>
-                  <div className="ec-month">Jun</div>
-                  <div className="ec-month">Jul</div>
-                  <div className="ec-month">Ago</div>
-                  <div className="ec-month">Set</div>
-
-                  <div className="ec-label">Bombeiros / CERCON</div>
-                  <div className="ec-cell ec-c2">7</div>
-                  <div className="ec-cell ec-c4">14</div>
-                  <div className="ec-cell ec-c1">3</div>
-                  <div className="ec-cell ec-c2">8</div>
-                  <div className="ec-cell ec-c3">10</div>
-                  <div className="ec-cell ec-c1">2</div>
-
-                  <div className="ec-label">Funcionamento</div>
-                  <div className="ec-cell ec-c3">12</div>
-                  <div className="ec-cell ec-c4">19</div>
-                  <div className="ec-cell ec-c2">9</div>
-                  <div className="ec-cell ec-c1">4</div>
-                  <div className="ec-cell ec-c2">8</div>
-                  <div className="ec-cell ec-c1">3</div>
-
-                  <div className="ec-label">Sanitário</div>
-                  <div className="ec-cell ec-c1">4</div>
-                  <div className="ec-cell ec-c2">8</div>
-                  <div className="ec-cell ec-c3">11</div>
-                  <div className="ec-cell ec-c4">13</div>
-                  <div className="ec-cell ec-c2">9</div>
-                  <div className="ec-cell ec-c1">4</div>
-
-                  <div className="ec-label">Ambiental</div>
-                  <div className="ec-cell ec-c1">2</div>
-                  <div className="ec-cell ec-c1">3</div>
-                  <div className="ec-cell ec-c2">7</div>
-                  <div className="ec-cell ec-c3">9</div>
-                  <div className="ec-cell ec-c4">12</div>
-                  <div className="ec-cell ec-c2">6</div>
-
-                  <div className="ec-label">Certificados</div>
-                  <div className="ec-cell ec-c4">17</div>
-                  <div className="ec-cell ec-c2">8</div>
-                  <div className="ec-cell ec-c1">4</div>
-                  <div className="ec-cell ec-c1">2</div>
-                  <div className="ec-cell ec-c2">6</div>
-                  <div className="ec-cell ec-c3">10</div>
-                </div>
-              </div>
-
-              <div className="ec-card">
-                <div className="ec-section-head">
-                  <div>
-                    <small>Fila</small>
-                    <h3>Ação urgente</h3>
-                  </div>
-                  <div className="ec-chip active">Top 5</div>
-                </div>
-
-                <div className="ec-urgency-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Score</th>
-                        <th>Empresa</th>
-                        <th>Tipo</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><div className="ec-score">98</div></td>
-                        <td>Auto Peças Primavera</td>
-                        <td>Licença Sanitária</td>
-                        <td><span className="ec-status ec-s-danger">Vencida</span></td>
-                      </tr>
-                      <tr>
-                        <td><div className="ec-score">94</div></td>
-                        <td>Clínica Santa Helena</td>
-                        <td>Processo CERCON</td>
-                        <td><span className="ec-status ec-s-warn">15d sem atualização</span></td>
-                      </tr>
-                      <tr>
-                        <td><div className="ec-score">91</div></td>
-                        <td>GH Sistemas</td>
-                        <td>TPI</td>
-                        <td><span className="ec-status ec-s-danger">Em aberto</span></td>
-                      </tr>
-                      <tr>
-                        <td><div className="ec-score">88</div></td>
-                        <td>Mercado Vitória</td>
-                        <td>Certificado</td>
-                        <td><span className="ec-status ec-s-warn">Vence em 3 dias</span></td>
-                      </tr>
-                      <tr>
-                        <td><div className="ec-score">84</div></td>
-                        <td>Construtora Araguaia</td>
-                        <td>Funcionamento</td>
-                        <td><span className="ec-status ec-s-neutral">Condicionado</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Section Grid - Matrix + Table */}
-            <div className="ec-section-grid">
-              <div className="ec-card">
-                <div className="ec-section-head">
-                  <div>
-                    <small>Taxas</small>
-                    <h3>Matriz semafórica por empresa</h3>
-                  </div>
-                  <div className="ec-chips">
-                    <div className="ec-chip active">Por empresa</div>
-                    <div className="ec-chip">Por tipo</div>
-                  </div>
-                </div>
-
-                <div className="ec-matrix">
-                  <div className="ec-m-head">Empresa</div>
-                  <div className="ec-m-head">FUNC</div>
-                  <div className="ec-m-head">PUB</div>
-                  <div className="ec-m-head">SAN</div>
-                  <div className="ec-m-head">LOC</div>
-                  <div className="ec-m-head">ÁREA</div>
-                  <div className="ec-m-head">BOMB</div>
-                  <div className="ec-m-head">TPI</div>
-
-                  <div className="ec-m-name">GH Sistemas</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-yellow">7d</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-red">AB</div>
-                  <div className="ec-m-cell ec-yellow">Envio</div>
-
-                  <div className="ec-m-name">Clínica Santa Helena</div>
-                  <div className="ec-m-cell ec-yellow">Pend.</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-red">Venc.</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-green">Pago</div>
-
-                  <div className="ec-m-name">Mercado Vitória</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-yellow">Pend.</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-yellow">30d</div>
-                  <div className="ec-m-cell ec-red">AB</div>
-
-                  <div className="ec-m-name">Construtora Araguaia</div>
-                  <div className="ec-m-cell ec-red">AB</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-gray">—</div>
-                  <div className="ec-m-cell ec-yellow">Pend.</div>
-                  <div className="ec-m-cell ec-yellow">Pend.</div>
-                  <div className="ec-m-cell ec-green">OK</div>
-                  <div className="ec-m-cell ec-green">Pago</div>
-                </div>
-
-                <div className="ec-hover-card">
-                  <strong>Hover / popover da célula:</strong> ao passar em "AB", o usuário vê
-                  status bruto, anos em aberto, último envio, método, observação e atalho para edição inline.
-                </div>
-              </div>
-
-              <div className="ec-card">
-                <div className="ec-section-head">
-                  <div>
-                    <small>Empresas</small>
-                    <h3>Tabela densa sem ficar pesada</h3>
-                  </div>
-                  <div className="ec-chip active">Compacto</div>
-                </div>
-
-                <div className="ec-urgency-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Empresa</th>
-                        <th>Score</th>
-                        <th>Risco</th>
-                        <th>Cert.</th>
-                        <th>Pendências</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>GH Sistemas</td>
-                        <td>86</td>
-                        <td><span className="ec-status ec-s-warn">Médio</span></td>
-                        <td><span className="ec-status ec-s-ok">Válido</span></td>
-                        <td>4</td>
-                      </tr>
-                      <tr>
-                        <td>Clínica Santa Helena</td>
-                        <td>94</td>
-                        <td><span className="ec-status ec-s-danger">Alto</span></td>
-                        <td><span className="ec-status ec-s-warn">Vence 3d</span></td>
-                        <td>7</td>
-                      </tr>
-                      <tr>
-                        <td>Construtora Araguaia</td>
-                        <td>79</td>
-                        <td><span className="ec-status ec-s-warn">Médio</span></td>
-                        <td><span className="ec-status ec-s-danger">Vencido</span></td>
-                        <td>5</td>
-                      </tr>
-                      <tr>
-                        <td>Mercado Vitória</td>
-                        <td>88</td>
-                        <td><span className="ec-status ec-s-danger">Alto</span></td>
-                        <td><span className="ec-status ec-s-ok">Válido</span></td>
-                        <td>6</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Kanban */}
-            <div className="ec-card">
-              <div className="ec-section-head">
-                <div>
-                  <small>Processos</small>
-                  <h3>Kanban operacional</h3>
-                </div>
-                <div className="ec-chips">
-                  <div className="ec-chip active">Kanban</div>
-                  <div className="ec-chip">Tabela</div>
-                  <div className="ec-chip">Cards</div>
-                </div>
-              </div>
-
-              <div className="ec-kanban">
-                <div className="ec-kanban-col">
-                  <h4>Triagem <span className="ec-chip">8</span></h4>
-                  <div className="ec-k-card">
-                    <b>Clínica Santa Helena</b>
-                    <span>CERCON · protocolo pendente</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-danger">Sem protocolo</i>
-                      <i className="ec-status ec-s-warn">Urgência 94</i>
-                    </div>
-                  </div>
-                  <div className="ec-k-card">
-                    <b>Mercado Vitória</b>
-                    <span>Funcionamento · documentação</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-warn">OBS aberta</i>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ec-kanban-col">
-                  <h4>Aguardando pagamento <span className="ec-chip">5</span></h4>
-                  <div className="ec-k-card">
-                    <b>Construtora Araguaia</b>
-                    <span>Uso do Solo · taxa emitida</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-danger">7 dias úteis</i>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ec-kanban-col">
-                  <h4>Em análise <span className="ec-chip">11</span></h4>
-                  <div className="ec-k-card">
-                    <b>Auto Peças Primavera</b>
-                    <span>Alvará Sanitário · vistoria</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-warn">15d sem update</i>
-                    </div>
-                  </div>
-                  <div className="ec-k-card">
-                    <b>GH Sistemas</b>
-                    <span>Bombeiros · validação</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-ok">Em andamento</i>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ec-kanban-col">
-                  <h4>Concluir <span className="ec-chip">3</span></h4>
-                  <div className="ec-k-card">
-                    <b>Mercado Vitória</b>
-                    <span>Funcionamento · deferido</span>
-                    <div className="ec-mini-tags">
-                      <i className="ec-status ec-s-ok">Pronto para fechamento</i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            {/* Tab Content */}
+            {activeTab === "painel" && <PainelContent />}
+            {activeTab === "empresas" && <EmpresasTab />}
+            {activeTab === "licencas" && <LicencasTab />}
+            {activeTab === "taxas" && <TaxasTab />}
+            {activeTab === "processos" && <ProcessosTab />}
+            {activeTab === "certificados" && <CertificadosTab />}
           </section>
         </div>
       </main>
     </div>
+  );
+}
+
+/* ─── Painel (Dashboard) Content ─── */
+function PainelContent() {
+  return (
+    <>
+      {/* KPI Grid */}
+      <div className="ec-grid-hero">
+        <div className="ec-kpi">
+          <div className="ec-kpi-top">
+            <div>
+              <label>Empresas sob atenção</label>
+              <div className="ec-value">184</div>
+              <div className="ec-trend warn">+12 esta semana</div>
+            </div>
+            <div className="ec-kpi-icon"><Building2 size={20} strokeWidth={1.6} /></div>
+          </div>
+          <div className="ec-spark"></div>
+        </div>
+
+        <div className="ec-kpi">
+          <div className="ec-kpi-top">
+            <div>
+              <label>Licenças vencendo</label>
+              <div className="ec-value">39</div>
+              <div className="ec-trend warn">17 em até 7 dias</div>
+            </div>
+            <div className="ec-kpi-icon ec-kpi-icon-amber"><FileText size={20} strokeWidth={1.6} /></div>
+          </div>
+          <div className="ec-spark ec-spark-amber"></div>
+        </div>
+
+        <div className="ec-kpi">
+          <div className="ec-kpi-top">
+            <div>
+              <label>Taxas irregulares</label>
+              <div className="ec-value">61</div>
+              <div className="ec-trend warn">22 com envio pendente</div>
+            </div>
+            <div className="ec-kpi-icon"><DollarSign size={20} strokeWidth={1.6} /></div>
+          </div>
+          <div className="ec-spark"></div>
+        </div>
+
+        <div className="ec-kpi">
+          <div className="ec-kpi-top">
+            <div>
+              <label>Processos críticos</label>
+              <div className="ec-value">27</div>
+              <div className="ec-trend up">-8 vs. último ciclo</div>
+            </div>
+            <div className="ec-kpi-icon ec-kpi-icon-red"><Zap size={20} strokeWidth={1.6} /></div>
+          </div>
+          <div className="ec-spark ec-spark-red"></div>
+        </div>
+      </div>
+
+      {/* Wide Grid - Heatmap + Urgency Table */}
+      <div className="ec-wide-grid">
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Painel</small>
+              <h3>Mapa de calor de vencimentos</h3>
+            </div>
+            <div className="ec-chip">Últimos 6 meses</div>
+          </div>
+
+          <div className="ec-heatmap">
+            <div></div>
+            <div className="ec-month">Abr</div>
+            <div className="ec-month">Mai</div>
+            <div className="ec-month">Jun</div>
+            <div className="ec-month">Jul</div>
+            <div className="ec-month">Ago</div>
+            <div className="ec-month">Set</div>
+
+            <div className="ec-label">Bombeiros / CERCON</div>
+            <div className="ec-cell ec-c2">7</div>
+            <div className="ec-cell ec-c4">14</div>
+            <div className="ec-cell ec-c1">3</div>
+            <div className="ec-cell ec-c2">8</div>
+            <div className="ec-cell ec-c3">10</div>
+            <div className="ec-cell ec-c1">2</div>
+
+            <div className="ec-label">Funcionamento</div>
+            <div className="ec-cell ec-c3">12</div>
+            <div className="ec-cell ec-c4">19</div>
+            <div className="ec-cell ec-c2">9</div>
+            <div className="ec-cell ec-c1">4</div>
+            <div className="ec-cell ec-c2">8</div>
+            <div className="ec-cell ec-c1">3</div>
+
+            <div className="ec-label">Sanitário</div>
+            <div className="ec-cell ec-c1">4</div>
+            <div className="ec-cell ec-c2">8</div>
+            <div className="ec-cell ec-c3">11</div>
+            <div className="ec-cell ec-c4">13</div>
+            <div className="ec-cell ec-c2">9</div>
+            <div className="ec-cell ec-c1">4</div>
+
+            <div className="ec-label">Ambiental</div>
+            <div className="ec-cell ec-c1">2</div>
+            <div className="ec-cell ec-c1">3</div>
+            <div className="ec-cell ec-c2">7</div>
+            <div className="ec-cell ec-c3">9</div>
+            <div className="ec-cell ec-c4">12</div>
+            <div className="ec-cell ec-c2">6</div>
+
+            <div className="ec-label">Certificados</div>
+            <div className="ec-cell ec-c4">17</div>
+            <div className="ec-cell ec-c2">8</div>
+            <div className="ec-cell ec-c1">4</div>
+            <div className="ec-cell ec-c1">2</div>
+            <div className="ec-cell ec-c2">6</div>
+            <div className="ec-cell ec-c3">10</div>
+          </div>
+        </div>
+
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Fila</small>
+              <h3>Ação urgente</h3>
+            </div>
+            <div className="ec-chip active">Top 5</div>
+          </div>
+
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Score</th>
+                  <th>Empresa</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div className="ec-score">98</div></td>
+                  <td>Auto Peças Primavera</td>
+                  <td>Licença Sanitária</td>
+                  <td><span className="ec-status ec-s-danger">Vencida</span></td>
+                </tr>
+                <tr>
+                  <td><div className="ec-score">94</div></td>
+                  <td>Clínica Santa Helena</td>
+                  <td>Processo CERCON</td>
+                  <td><span className="ec-status ec-s-warn">15d sem atualização</span></td>
+                </tr>
+                <tr>
+                  <td><div className="ec-score">91</div></td>
+                  <td>GH Sistemas</td>
+                  <td>TPI</td>
+                  <td><span className="ec-status ec-s-danger">Em aberto</span></td>
+                </tr>
+                <tr>
+                  <td><div className="ec-score">88</div></td>
+                  <td>Mercado Vitória</td>
+                  <td>Certificado</td>
+                  <td><span className="ec-status ec-s-warn">Vence em 3 dias</span></td>
+                </tr>
+                <tr>
+                  <td><div className="ec-score">84</div></td>
+                  <td>Construtora Araguaia</td>
+                  <td>Funcionamento</td>
+                  <td><span className="ec-status ec-s-neutral">Condicionado</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Section Grid - Matrix + Table */}
+      <div className="ec-section-grid">
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Taxas</small>
+              <h3>Matriz semafórica por empresa</h3>
+            </div>
+            <div className="ec-chips">
+              <div className="ec-chip active">Por empresa</div>
+              <div className="ec-chip">Por tipo</div>
+            </div>
+          </div>
+
+          <div className="ec-matrix">
+            <div className="ec-m-head">Empresa</div>
+            <div className="ec-m-head">FUNC</div>
+            <div className="ec-m-head">PUB</div>
+            <div className="ec-m-head">SAN</div>
+            <div className="ec-m-head">LOC</div>
+            <div className="ec-m-head">ÁREA</div>
+            <div className="ec-m-head">BOMB</div>
+            <div className="ec-m-head">TPI</div>
+
+            <div className="ec-m-name">GH Sistemas</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-yellow">7d</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-red">AB</div>
+            <div className="ec-m-cell ec-yellow">Envio</div>
+
+            <div className="ec-m-name">Clínica Santa Helena</div>
+            <div className="ec-m-cell ec-yellow">Pend.</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-red">Venc.</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-green">Pago</div>
+
+            <div className="ec-m-name">Mercado Vitória</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-yellow">Pend.</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-yellow">30d</div>
+            <div className="ec-m-cell ec-red">AB</div>
+
+            <div className="ec-m-name">Construtora Araguaia</div>
+            <div className="ec-m-cell ec-red">AB</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-gray">—</div>
+            <div className="ec-m-cell ec-yellow">Pend.</div>
+            <div className="ec-m-cell ec-yellow">Pend.</div>
+            <div className="ec-m-cell ec-green">OK</div>
+            <div className="ec-m-cell ec-green">Pago</div>
+          </div>
+
+          <div className="ec-hover-card">
+            <strong>Hover / popover da célula:</strong> ao passar em "AB", o usuário vê
+            status bruto, anos em aberto, último envio, método, observação e atalho para edição inline.
+          </div>
+        </div>
+
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Empresas</small>
+              <h3>Tabela densa sem ficar pesada</h3>
+            </div>
+            <div className="ec-chip active">Compacto</div>
+          </div>
+
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Score</th>
+                  <th>Risco</th>
+                  <th>Cert.</th>
+                  <th>Pendências</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GH Sistemas</td>
+                  <td>86</td>
+                  <td><span className="ec-status ec-s-warn">Médio</span></td>
+                  <td><span className="ec-status ec-s-ok">Válido</span></td>
+                  <td>4</td>
+                </tr>
+                <tr>
+                  <td>Clínica Santa Helena</td>
+                  <td>94</td>
+                  <td><span className="ec-status ec-s-danger">Alto</span></td>
+                  <td><span className="ec-status ec-s-warn">Vence 3d</span></td>
+                  <td>7</td>
+                </tr>
+                <tr>
+                  <td>Construtora Araguaia</td>
+                  <td>79</td>
+                  <td><span className="ec-status ec-s-warn">Médio</span></td>
+                  <td><span className="ec-status ec-s-danger">Vencido</span></td>
+                  <td>5</td>
+                </tr>
+                <tr>
+                  <td>Mercado Vitória</td>
+                  <td>88</td>
+                  <td><span className="ec-status ec-s-danger">Alto</span></td>
+                  <td><span className="ec-status ec-s-ok">Válido</span></td>
+                  <td>6</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Kanban */}
+      <div className="ec-card">
+        <div className="ec-section-head">
+          <div>
+            <small>Processos</small>
+            <h3>Kanban operacional</h3>
+          </div>
+          <div className="ec-chips">
+            <div className="ec-chip active">Kanban</div>
+            <div className="ec-chip">Tabela</div>
+            <div className="ec-chip">Cards</div>
+          </div>
+        </div>
+
+        <div className="ec-kanban">
+          <div className="ec-kanban-col">
+            <h4>Triagem <span className="ec-chip">8</span></h4>
+            <div className="ec-k-card">
+              <b>Clínica Santa Helena</b>
+              <span>CERCON · protocolo pendente</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-danger">Sem protocolo</i>
+                <i className="ec-status ec-s-warn">Urgência 94</i>
+              </div>
+            </div>
+            <div className="ec-k-card">
+              <b>Mercado Vitória</b>
+              <span>Funcionamento · documentação</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-warn">OBS aberta</i>
+              </div>
+            </div>
+          </div>
+
+          <div className="ec-kanban-col">
+            <h4>Aguardando pagamento <span className="ec-chip">5</span></h4>
+            <div className="ec-k-card">
+              <b>Construtora Araguaia</b>
+              <span>Uso do Solo · taxa emitida</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-danger">7 dias úteis</i>
+              </div>
+            </div>
+          </div>
+
+          <div className="ec-kanban-col">
+            <h4>Em análise <span className="ec-chip">11</span></h4>
+            <div className="ec-k-card">
+              <b>Auto Peças Primavera</b>
+              <span>Alvará Sanitário · vistoria</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-warn">15d sem update</i>
+              </div>
+            </div>
+            <div className="ec-k-card">
+              <b>GH Sistemas</b>
+              <span>Bombeiros · validação</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-ok">Em andamento</i>
+              </div>
+            </div>
+          </div>
+
+          <div className="ec-kanban-col">
+            <h4>Concluir <span className="ec-chip">3</span></h4>
+            <div className="ec-k-card">
+              <b>Mercado Vitória</b>
+              <span>Funcionamento · deferido</span>
+              <div className="ec-mini-tags">
+                <i className="ec-status ec-s-ok">Pronto para fechamento</i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
