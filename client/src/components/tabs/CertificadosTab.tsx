@@ -1,8 +1,71 @@
+import { useState, useMemo } from "react";
 import { certificates, getCertStatus } from "@/data/mockData";
-import { ShieldCheck, ShieldAlert, Clock, KeyRound } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Clock, KeyRound, SearchX } from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+
+const FILTERS = [
+  {
+    key: "status",
+    label: "Status",
+    multi: true,
+    options: [
+      { label: "Válido", value: "ok" },
+      { label: "Vencendo (30d)", value: "warn" },
+      { label: "Vencido", value: "danger" },
+    ],
+  },
+  {
+    key: "emissor",
+    label: "Emissor",
+    multi: true,
+    options: [
+      { label: "AC SOLUTI", value: "AC SOLUTI Múltipla v5" },
+      { label: "AC SERASA RFB", value: "AC SERASA RFB v5" },
+      { label: "AC VALID RFB", value: "AC VALID RFB v5" },
+      { label: "AC CERTISIGN", value: "AC CERTISIGN RFB G5" },
+    ],
+  },
+];
+
+function validityPercent(notBefore: string, notAfter: string): number {
+  const start = new Date(notBefore).getTime();
+  const end = new Date(notAfter).getTime();
+  const now = Date.now();
+  const total = end - start;
+  const elapsed = now - start;
+  return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+}
 
 export default function CertificadosTab() {
-  const statuses = certificates.map(c => getCertStatus(c.not_after));
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+
+  function handleFilterChange(key: string, values: string[]) {
+    setActiveFilters(prev => ({ ...prev, [key]: values }));
+  }
+
+  const filtered = useMemo(() => {
+    return certificates.filter(c => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (
+          !c.company_name.toLowerCase().includes(q) &&
+          !c.document_masked.includes(q) &&
+          !c.issuer_cn.toLowerCase().includes(q)
+        )
+          return false;
+      }
+      if (activeFilters.status?.length) {
+        const st = getCertStatus(c.not_after).status;
+        if (!activeFilters.status.includes(st)) return false;
+      }
+      if (activeFilters.emissor?.length && !activeFilters.emissor.includes(c.issuer_cn)) return false;
+      return true;
+    });
+  }, [search, activeFilters]);
+
+  const statuses = filtered.map(c => getCertStatus(c.not_after));
   const validos = statuses.filter(s => s.status === "ok").length;
   const vencendo = statuses.filter(s => s.status === "warn").length;
   const vencidos = statuses.filter(s => s.status === "danger").length;
@@ -50,99 +113,113 @@ export default function CertificadosTab() {
         </div>
       </div>
 
-      {/* Certificates table */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Certificados digitais</small>
-            <h3>Certificados A1/A3 vinculados</h3>
-          </div>
-          <div className="ec-chip">{certificates.length} registros</div>
-        </div>
+      <TabFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por empresa, CNPJ, emissor…"
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
+        resultCount={filtered.length}
+      />
 
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>CNPJ</th>
-                <th>Emissor</th>
-                <th>Válido desde</th>
-                <th>Válido até</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {certificates.map(c => {
-                const st = getCertStatus(c.not_after);
-                return (
-                  <tr key={c.id}>
-                    <td style={{ fontWeight: 600 }}>{c.company_name}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.document_masked}</td>
-                    <td style={{ fontSize: 12 }}>{c.issuer_cn}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.not_before}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.not_after}</td>
-                    <td>
-                      <span className={`ec-status ${st.status === "ok" ? "ec-s-ok" : st.status === "warn" ? "ec-s-warn" : "ec-s-danger"}`}>
-                        {st.label}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {filtered.length === 0 ? (
+        <div className="ec-card ec-empty-state">
+          <SearchX size={32} />
+          <p>Nenhum certificado encontrado com os filtros aplicados.</p>
         </div>
-      </div>
-
-      {/* Timeline card */}
-      <div className="ec-section-grid">
+      ) : viewMode === "table" ? (
         <div className="ec-card">
-          <div className="ec-section-head">
-            <div>
-              <small>Próximos vencimentos</small>
-              <h3>Certificados que vencem em breve</h3>
-            </div>
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>CNPJ</th>
+                  <th>Emissor</th>
+                  <th>Válido desde</th>
+                  <th>Válido até</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => {
+                  const st = getCertStatus(c.not_after);
+                  return (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 600 }}>{c.company_name}</td>
+                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.document_masked}</td>
+                      <td style={{ fontSize: 12 }}>{c.issuer_cn}</td>
+                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.not_before}</td>
+                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.not_after}</td>
+                      <td>
+                        <span className={`ec-status ${st.status === "ok" ? "ec-s-ok" : st.status === "warn" ? "ec-s-warn" : "ec-s-danger"}`}>
+                          {st.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {certificates
-              .map(c => ({ ...c, ...getCertStatus(c.not_after) }))
-              .sort((a, b) => a.not_after.localeCompare(b.not_after))
-              .slice(0, 5)
-              .map(c => (
-                <div key={c.id} className="ec-saved-view">
-                  <div>
-                    <b>{c.company_name}</b>
-                    <span>Vence em {c.not_after} · {c.issuer_cn}</span>
+        </div>
+      ) : (
+        <div className="ec-cards-grid">
+          {filtered.map(c => {
+            const st = getCertStatus(c.not_after);
+            const pct = validityPercent(c.not_before, c.not_after);
+            const barColor = st.status === "ok" ? "#16a34a" : st.status === "warn" ? "#d97706" : "#dc2626";
+            const iconBg = st.status === "ok" ? "#f0fdf4" : st.status === "warn" ? "#fef9ee" : "#fef2f2";
+            const iconColor = st.status === "ok" ? "#16a34a" : st.status === "warn" ? "#d97706" : "#dc2626";
+            const Icon = st.status === "ok" ? ShieldCheck : st.status === "warn" ? Clock : ShieldAlert;
+
+            return (
+              <div key={c.id} className="ec-cert-card">
+                <div className="ec-cert-card-head">
+                  <div className="ec-cert-card-icon" style={{ background: iconBg, color: iconColor }}>
+                    <Icon size={20} strokeWidth={1.6} />
                   </div>
-                  <div className={`ec-dot ${c.status === "ok" ? "ec-dot-green" : c.status === "warn" ? "ec-dot-amber" : "ec-dot-red"}`}></div>
+                  <div className="ec-cert-card-title">
+                    <b>{c.company_name}</b>
+                    <span>{c.document_masked}</span>
+                  </div>
+                  <span className={`ec-status ${st.status === "ok" ? "ec-s-ok" : st.status === "warn" ? "ec-s-warn" : "ec-s-danger"}`}>
+                    {st.label}
+                  </span>
                 </div>
-              ))}
-          </div>
-        </div>
 
-        <div className="ec-card">
-          <div className="ec-section-head">
-            <div>
-              <small>Distribuição</small>
-              <h3>Por emissor</h3>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {Object.entries(
-              certificates.reduce((acc, c) => {
-                acc[c.issuer_cn] = (acc[c.issuer_cn] || 0) + 1;
-                return acc;
-              }, {} as Record<string, number>)
-            ).sort((a, b) => b[1] - a[1]).map(([issuer, count]) => (
-              <div key={issuer} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8f9fb", borderRadius: 8 }}>
-                <span style={{ fontWeight: 500, fontSize: 13 }}>{issuer}</span>
-                <span className="ec-chip">{count}</span>
+                <div className="ec-cert-card-validity">
+                  <label>Período de validade</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                    <span style={{ fontFamily: "monospace" }}>{c.not_before}</span>
+                    <span style={{ fontFamily: "monospace" }}>{c.not_after}</span>
+                  </div>
+                  <div className="ec-cert-card-validity-bar">
+                    <div
+                      className="ec-cert-card-validity-fill"
+                      style={{ width: `${pct}%`, background: barColor }}
+                    />
+                  </div>
+                </div>
+
+                <div className="ec-cert-card-meta">
+                  <div className="ec-cert-card-meta-item">
+                    <label>Emissor</label>
+                    <span>{c.issuer_cn}</span>
+                  </div>
+                  <div className="ec-cert-card-meta-item">
+                    <label>Tipo documento</label>
+                    <span>{c.document_type}</span>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

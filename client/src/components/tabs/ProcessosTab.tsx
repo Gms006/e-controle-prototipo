@@ -1,5 +1,44 @@
+import { useState, useMemo } from "react";
 import { processes } from "@/data/mockData";
-import { FolderKanban, Clock, CheckCircle, AlertTriangle, FileSearch } from "lucide-react";
+import { FolderKanban, Clock, CheckCircle, AlertTriangle, FileSearch, SearchX, MapPin, Building2 } from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+
+const FILTERS = [
+  {
+    key: "situacao",
+    label: "Situação",
+    multi: true,
+    options: [
+      { label: "Pendente", value: "Pendente" },
+      { label: "Em análise", value: "Em análise" },
+      { label: "Em andamento", value: "Em andamento" },
+      { label: "Aguardando pagamento", value: "Aguardando pagamento" },
+      { label: "Deferido", value: "Deferido" },
+    ],
+  },
+  {
+    key: "tipo",
+    label: "Tipo",
+    multi: true,
+    options: [
+      { label: "CERCON", value: "CERCON" },
+      { label: "Funcionamento", value: "Funcionamento" },
+      { label: "Uso do Solo", value: "Uso do Solo" },
+      { label: "Vigilância Sanitária", value: "Vigilância Sanitária" },
+      { label: "Bombeiros", value: "Bombeiros" },
+    ],
+  },
+  {
+    key: "municipio",
+    label: "Município",
+    multi: true,
+    options: [
+      { label: "Anápolis", value: "Anápolis" },
+      { label: "Goiânia", value: "Goiânia" },
+      { label: "Aparecida de Goiânia", value: "Aparecida de Goiânia" },
+    ],
+  },
+];
 
 function SituacaoBadge({ value }: { value: string }) {
   const cls =
@@ -11,17 +50,37 @@ function SituacaoBadge({ value }: { value: string }) {
 }
 
 export default function ProcessosTab() {
-  const situacoes = processes.reduce((acc, p) => {
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+
+  function handleFilterChange(key: string, values: string[]) {
+    setActiveFilters(prev => ({ ...prev, [key]: values }));
+  }
+
+  const filtered = useMemo(() => {
+    return processes.filter(p => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (
+          !p.company_name.toLowerCase().includes(q) &&
+          !p.protocolo.toLowerCase().includes(q) &&
+          !p.process_type.toLowerCase().includes(q) &&
+          !p.orgao.toLowerCase().includes(q)
+        )
+          return false;
+      }
+      if (activeFilters.situacao?.length && !activeFilters.situacao.includes(p.situacao)) return false;
+      if (activeFilters.tipo?.length && !activeFilters.tipo.includes(p.process_type)) return false;
+      if (activeFilters.municipio?.length && !activeFilters.municipio.includes(p.municipio)) return false;
+      return true;
+    });
+  }, [search, activeFilters]);
+
+  const situacoes = filtered.reduce((acc, p) => {
     acc[p.situacao] = (acc[p.situacao] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-
-  const kanbanCols: { title: string; situacoes: string[] }[] = [
-    { title: "Triagem / Pendente", situacoes: ["Pendente"] },
-    { title: "Aguardando pagamento", situacoes: ["Aguardando pagamento"] },
-    { title: "Em análise", situacoes: ["Em análise", "Em andamento"] },
-    { title: "Concluído / Deferido", situacoes: ["Deferido"] },
-  ];
 
   return (
     <div className="ec-tab-content">
@@ -65,80 +124,86 @@ export default function ProcessosTab() {
         </div>
       </div>
 
-      {/* Kanban */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Processos</small>
-            <h3>Kanban operacional</h3>
-          </div>
-          <div className="ec-chips">
-            <div className="ec-chip active">Kanban</div>
-            <div className="ec-chip">Tabela</div>
-          </div>
-        </div>
+      <TabFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por empresa, protocolo, órgão…"
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
+        resultCount={filtered.length}
+      />
 
-        <div className="ec-kanban">
-          {kanbanCols.map(col => {
-            const items = processes.filter(p => col.situacoes.includes(p.situacao));
-            return (
-              <div key={col.title} className="ec-kanban-col">
-                <h4>{col.title} <span className="ec-chip">{items.length}</span></h4>
-                {items.map(p => (
-                  <div key={p.id} className="ec-k-card">
-                    <b>{p.company_name}</b>
-                    <span>{p.process_type} · {p.operacao}</span>
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8", fontFamily: "monospace" }}>{p.protocolo}</div>
-                    <div className="ec-mini-tags">
-                      <i className={`ec-status ${p.situacao === "Deferido" ? "ec-s-ok" : p.situacao === "Pendente" || p.situacao === "Aguardando pagamento" ? "ec-s-warn" : "ec-s-neutral"}`}>
-                        {p.situacao}
-                      </i>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+      {filtered.length === 0 ? (
+        <div className="ec-card ec-empty-state">
+          <SearchX size={32} />
+          <p>Nenhum processo encontrado com os filtros aplicados.</p>
         </div>
-      </div>
-
-      {/* Full table */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Detalhes</small>
-            <h3>Todos os processos</h3>
-          </div>
-          <div className="ec-chip">{processes.length} registros</div>
-        </div>
-
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>Tipo</th>
-                <th>Protocolo</th>
-                <th>Órgão</th>
-                <th>Solicitação</th>
-                <th>Situação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {processes.map(p => (
-                <tr key={p.id}>
-                  <td style={{ fontWeight: 600 }}>{p.company_name}</td>
-                  <td>{p.process_type}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.protocolo}</td>
-                  <td style={{ fontSize: 12 }}>{p.orgao}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.data_solicitacao}</td>
-                  <td><SituacaoBadge value={p.situacao} /></td>
+      ) : viewMode === "table" ? (
+        <div className="ec-card">
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Tipo</th>
+                  <th>Protocolo</th>
+                  <th>Órgão</th>
+                  <th>Solicitação</th>
+                  <th>Situação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map(p => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 600 }}>{p.company_name}</td>
+                    <td>{p.process_type}</td>
+                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.protocolo}</td>
+                    <td style={{ fontSize: 12 }}>{p.orgao}</td>
+                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.data_solicitacao}</td>
+                    <td><SituacaoBadge value={p.situacao} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="ec-cards-grid">
+          {filtered.map(p => (
+            <div key={p.id} className="ec-process-card">
+              <div className="ec-process-card-head">
+                <div className="ec-process-card-title">
+                  <b>{p.company_name}</b>
+                  <span>{p.process_type} · {p.operacao}</span>
+                </div>
+                <SituacaoBadge value={p.situacao} />
+              </div>
+
+              <div className="ec-process-card-meta">
+                <div className="ec-process-card-row">
+                  <label>Protocolo</label>
+                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>{p.protocolo}</span>
+                </div>
+                <div className="ec-process-card-row">
+                  <label><Building2 size={11} style={{ display: "inline", marginRight: 3 }} />{p.orgao}</label>
+                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>{p.data_solicitacao}</span>
+                </div>
+                <div className="ec-process-card-row">
+                  <label><MapPin size={11} style={{ display: "inline", marginRight: 3 }} />Município</label>
+                  <span>{p.municipio}</span>
+                </div>
+              </div>
+
+              {p.obs && (
+                <div className="ec-process-card-obs">{p.obs}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

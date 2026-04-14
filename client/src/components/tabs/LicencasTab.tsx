@@ -1,5 +1,41 @@
+import { useState, useMemo } from "react";
 import { licences, getLicenceStatus } from "@/data/mockData";
-import { ScrollText, ShieldAlert, ShieldCheck, Clock } from "lucide-react";
+import { ScrollText, ShieldAlert, ShieldCheck, Clock, SearchX } from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+
+const FILTERS = [
+  {
+    key: "municipio",
+    label: "Município",
+    multi: true,
+    options: [
+      { label: "Anápolis", value: "Anápolis" },
+      { label: "Goiânia", value: "Goiânia" },
+      { label: "Aparecida de Goiânia", value: "Aparecida de Goiânia" },
+    ],
+  },
+  {
+    key: "funcionamento",
+    label: "Funcionamento",
+    multi: true,
+    options: [
+      { label: "Válido", value: "Válido" },
+      { label: "Vencendo", value: "Vencendo" },
+      { label: "Vencido", value: "Vencido" },
+      { label: "Pendente", value: "Pendente" },
+    ],
+  },
+  {
+    key: "vig_sanitaria",
+    label: "Vig. Sanitária",
+    multi: true,
+    options: [
+      { label: "Válido", value: "Válido" },
+      { label: "Vencido", value: "Vencido" },
+      { label: "Não exigido", value: "Não exigido" },
+    ],
+  },
+];
 
 function StatusBadge({ value }: { value: string }) {
   const s = getLicenceStatus(value);
@@ -7,18 +43,44 @@ function StatusBadge({ value }: { value: string }) {
   return <span className={`ec-status ${cls}`}>{value}</span>;
 }
 
+const LICENCE_TYPES = [
+  { key: "alvara_vig_sanitaria" as const, label: "Vig. Sanitária", dateKey: "alvara_vig_sanitaria_valid_until" as const },
+  { key: "cercon" as const, label: "CERCON", dateKey: "cercon_valid_until" as const },
+  { key: "alvara_funcionamento" as const, label: "Funcionamento", dateKey: "alvara_funcionamento_valid_until" as const },
+  { key: "licenca_ambiental" as const, label: "Ambiental", dateKey: "licenca_ambiental_valid_until" as const },
+  { key: "certidao_uso_solo" as const, label: "Uso do Solo", dateKey: "certidao_uso_solo_valid_until" as const },
+];
+
 export default function LicencasTab() {
-  const vencidas = licences.filter(l =>
-    [l.alvara_vig_sanitaria, l.cercon, l.alvara_funcionamento, l.licenca_ambiental, l.certidao_uso_solo]
-      .some(v => v === "Vencido")
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+
+  function handleFilterChange(key: string, values: string[]) {
+    setActiveFilters(prev => ({ ...prev, [key]: values }));
+  }
+
+  const filtered = useMemo(() => {
+    return licences.filter(l => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (!l.company_name.toLowerCase().includes(q) && !l.municipio.toLowerCase().includes(q)) return false;
+      }
+      if (activeFilters.municipio?.length && !activeFilters.municipio.includes(l.municipio)) return false;
+      if (activeFilters.funcionamento?.length && !activeFilters.funcionamento.includes(l.alvara_funcionamento)) return false;
+      if (activeFilters.vig_sanitaria?.length && !activeFilters.vig_sanitaria.includes(l.alvara_vig_sanitaria)) return false;
+      return true;
+    });
+  }, [search, activeFilters]);
+
+  const vencidas = filtered.filter(l =>
+    LICENCE_TYPES.some(t => l[t.key] === "Vencido")
   ).length;
-  const vencendo = licences.filter(l =>
-    [l.alvara_vig_sanitaria, l.cercon, l.alvara_funcionamento, l.licenca_ambiental, l.certidao_uso_solo]
-      .some(v => v === "Vencendo")
+  const vencendo = filtered.filter(l =>
+    LICENCE_TYPES.some(t => l[t.key] === "Vencendo")
   ).length;
-  const pendentes = licences.filter(l =>
-    [l.alvara_vig_sanitaria, l.cercon, l.alvara_funcionamento, l.licenca_ambiental, l.certidao_uso_solo]
-      .some(v => v === "Pendente" || v === "Em andamento")
+  const pendentes = filtered.filter(l =>
+    LICENCE_TYPES.some(t => l[t.key] === "Pendente" || l[t.key] === "Em andamento")
   ).length;
 
   return (
@@ -27,7 +89,7 @@ export default function LicencasTab() {
         <div className="ec-kpi">
           <div className="ec-kpi-top">
             <div>
-              <label>Total de licenças</label>
+              <label>Total de registros</label>
               <div className="ec-value">{licences.length}</div>
             </div>
             <div className="ec-kpi-icon"><ScrollText size={20} strokeWidth={1.6} /></div>
@@ -63,86 +125,102 @@ export default function LicencasTab() {
         </div>
       </div>
 
-      {/* Licence matrix */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Licenças</small>
-            <h3>Matriz de licenças por empresa</h3>
+      <TabFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por empresa ou município…"
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
+        resultCount={filtered.length}
+      />
+
+      {filtered.length === 0 ? (
+        <div className="ec-card ec-empty-state">
+          <SearchX size={32} />
+          <p>Nenhuma licença encontrada com os filtros aplicados.</p>
+        </div>
+      ) : viewMode === "table" ? (
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Matriz</small>
+              <h3>Licenças por empresa</h3>
+            </div>
           </div>
-          <div className="ec-chip">{licences.length} empresas</div>
-        </div>
-
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>Município</th>
-                <th>Vig. Sanitária</th>
-                <th>CERCON</th>
-                <th>Funcionamento</th>
-                <th>Ambiental</th>
-                <th>Uso do Solo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {licences.map(l => (
-                <tr key={l.id}>
-                  <td style={{ fontWeight: 600 }}>{l.company_name}</td>
-                  <td>{l.municipio}</td>
-                  <td><StatusBadge value={l.alvara_vig_sanitaria} /></td>
-                  <td><StatusBadge value={l.cercon} /></td>
-                  <td><StatusBadge value={l.alvara_funcionamento} /></td>
-                  <td><StatusBadge value={l.licenca_ambiental} /></td>
-                  <td><StatusBadge value={l.certidao_uso_solo} /></td>
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Município</th>
+                  <th>Vig. Sanitária</th>
+                  <th>CERCON</th>
+                  <th>Funcionamento</th>
+                  <th>Ambiental</th>
+                  <th>Uso do Solo</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Validity details */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Validade</small>
-            <h3>Próximos vencimentos</h3>
+              </thead>
+              <tbody>
+                {filtered.map(l => (
+                  <tr key={l.id}>
+                    <td style={{ fontWeight: 600 }}>{l.company_name}</td>
+                    <td>{l.municipio}</td>
+                    <td><StatusBadge value={l.alvara_vig_sanitaria} /></td>
+                    <td><StatusBadge value={l.cercon} /></td>
+                    <td><StatusBadge value={l.alvara_funcionamento} /></td>
+                    <td><StatusBadge value={l.licenca_ambiental} /></td>
+                    <td><StatusBadge value={l.certidao_uso_solo} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      ) : (
+        <div className="ec-cards-grid">
+          {filtered.map(l => (
+            <div key={l.id} className="ec-licence-card">
+              <div className="ec-licence-card-head">
+                <div className="ec-licence-card-title">
+                  <b>{l.company_name}</b>
+                  <span>{l.municipio}</span>
+                </div>
+                {/* Overall status indicator */}
+                {LICENCE_TYPES.some(t => l[t.key] === "Vencido") ? (
+                  <span className="ec-status ec-s-danger">Irregular</span>
+                ) : LICENCE_TYPES.some(t => l[t.key] === "Vencendo" || l[t.key] === "Pendente") ? (
+                  <span className="ec-status ec-s-warn">Atenção</span>
+                ) : (
+                  <span className="ec-status ec-s-ok">Regular</span>
+                )}
+              </div>
 
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>Tipo de licença</th>
-                <th>Validade</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {licences.flatMap(l => {
-                const items: { company: string; tipo: string; date: string | null; status: string }[] = [];
-                if (l.alvara_vig_sanitaria_valid_until) items.push({ company: l.company_name, tipo: "Vigilância Sanitária", date: l.alvara_vig_sanitaria_valid_until, status: l.alvara_vig_sanitaria });
-                if (l.cercon_valid_until) items.push({ company: l.company_name, tipo: "CERCON", date: l.cercon_valid_until, status: l.cercon });
-                if (l.alvara_funcionamento_valid_until) items.push({ company: l.company_name, tipo: "Funcionamento", date: l.alvara_funcionamento_valid_until, status: l.alvara_funcionamento });
-                if (l.licenca_ambiental_valid_until) items.push({ company: l.company_name, tipo: "Ambiental", date: l.licenca_ambiental_valid_until, status: l.licenca_ambiental });
-                if (l.certidao_uso_solo_valid_until) items.push({ company: l.company_name, tipo: "Uso do Solo", date: l.certidao_uso_solo_valid_until, status: l.certidao_uso_solo });
-                return items;
-              }).sort((a, b) => (a.date || "").localeCompare(b.date || "")).slice(0, 10).map((item, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{item.company}</td>
-                  <td>{item.tipo}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{item.date}</td>
-                  <td><StatusBadge value={item.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              <div className="ec-licence-pills">
+                {LICENCE_TYPES.map(t => {
+                  const val = l[t.key];
+                  if (val === "Não exigido") return null;
+                  const s = getLicenceStatus(val);
+                  const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
+                  return (
+                    <div key={t.key} className="ec-licence-pill">
+                      <span className="ec-licence-pill-name">{t.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {l[t.dateKey] && (
+                          <span className="ec-licence-pill-date">{l[t.dateKey]}</span>
+                        )}
+                        <span className={`ec-status ${cls}`}>{val}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,50 @@
+import { useState, useMemo } from "react";
 import { taxes, getLicenceStatus } from "@/data/mockData";
-import { Receipt, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Receipt, AlertTriangle, CheckCircle, Clock, SearchX } from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+
+const FILTERS = [
+  {
+    key: "status",
+    label: "Status geral",
+    multi: true,
+    options: [
+      { label: "Em dia", value: "Em dia" },
+      { label: "Pendente", value: "Pendente" },
+      { label: "Irregular", value: "Irregular" },
+    ],
+  },
+  {
+    key: "tpi",
+    label: "TPI",
+    multi: true,
+    options: [
+      { label: "Pago", value: "Pago" },
+      { label: "Pendente envio", value: "Pendente envio" },
+      { label: "Em aberto", value: "Em aberto" },
+    ],
+  },
+  {
+    key: "bombeiros",
+    label: "Bombeiros",
+    multi: true,
+    options: [
+      { label: "Pago", value: "Pago" },
+      { label: "Pendente", value: "Pendente" },
+      { label: "Não exigido", value: "Não exigido" },
+    ],
+  },
+];
+
+const TAX_FIELDS: { key: keyof typeof taxes[0]; label: string }[] = [
+  { key: "taxa_funcionamento", label: "Funcionamento" },
+  { key: "taxa_publicidade", label: "Publicidade" },
+  { key: "taxa_vig_sanitaria", label: "Vig. Sanitária" },
+  { key: "taxa_localiz_instalacao", label: "Localização" },
+  { key: "taxa_ocup_area_publica", label: "Área Pública" },
+  { key: "taxa_bombeiros", label: "Bombeiros" },
+  { key: "tpi", label: "TPI" },
+];
 
 function TaxCell({ value }: { value: string }) {
   const s = getLicenceStatus(value);
@@ -14,9 +59,30 @@ function StatusBadge({ value }: { value: string }) {
 }
 
 export default function TaxasTab() {
-  const emDia = taxes.filter(t => t.status_taxas === "Em dia").length;
-  const pendentes = taxes.filter(t => t.status_taxas === "Pendente").length;
-  const irregulares = taxes.filter(t => t.status_taxas === "Irregular").length;
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+
+  function handleFilterChange(key: string, values: string[]) {
+    setActiveFilters(prev => ({ ...prev, [key]: values }));
+  }
+
+  const filtered = useMemo(() => {
+    return taxes.filter(t => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (!t.company_name.toLowerCase().includes(q)) return false;
+      }
+      if (activeFilters.status?.length && !activeFilters.status.includes(t.status_taxas)) return false;
+      if (activeFilters.tpi?.length && !activeFilters.tpi.includes(t.tpi)) return false;
+      if (activeFilters.bombeiros?.length && !activeFilters.bombeiros.includes(t.taxa_bombeiros)) return false;
+      return true;
+    });
+  }, [search, activeFilters]);
+
+  const emDia = filtered.filter(t => t.status_taxas === "Em dia").length;
+  const pendentes = filtered.filter(t => t.status_taxas === "Pendente").length;
+  const irregulares = filtered.filter(t => t.status_taxas === "Irregular").length;
 
   return (
     <div className="ec-tab-content">
@@ -60,76 +126,84 @@ export default function TaxasTab() {
         </div>
       </div>
 
-      {/* Tax matrix */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Taxas</small>
-            <h3>Matriz semafórica por empresa</h3>
+      <TabFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por empresa…"
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
+        resultCount={filtered.length}
+      />
+
+      {filtered.length === 0 ? (
+        <div className="ec-card ec-empty-state">
+          <SearchX size={32} />
+          <p>Nenhum registro encontrado com os filtros aplicados.</p>
+        </div>
+      ) : viewMode === "table" ? (
+        <div className="ec-card">
+          <div className="ec-section-head">
+            <div>
+              <small>Taxas</small>
+              <h3>Matriz semafórica por empresa</h3>
+            </div>
           </div>
-          <div className="ec-chips">
-            <div className="ec-chip active">Por empresa</div>
-            <div className="ec-chip">Por tipo</div>
+          <div className="ec-matrix">
+            <div className="ec-m-head">Empresa</div>
+            <div className="ec-m-head">FUNC</div>
+            <div className="ec-m-head">PUB</div>
+            <div className="ec-m-head">SAN</div>
+            <div className="ec-m-head">LOC</div>
+            <div className="ec-m-head">ÁREA</div>
+            <div className="ec-m-head">BOMB</div>
+            <div className="ec-m-head">TPI</div>
+            {filtered.map(t => (
+              <div key={t.id} style={{ display: "contents" }}>
+                <div className="ec-m-name">{t.company_name}</div>
+                <TaxCell value={t.taxa_funcionamento} />
+                <TaxCell value={t.taxa_publicidade} />
+                <TaxCell value={t.taxa_vig_sanitaria} />
+                <TaxCell value={t.taxa_localiz_instalacao} />
+                <TaxCell value={t.taxa_ocup_area_publica} />
+                <TaxCell value={t.taxa_bombeiros} />
+                <TaxCell value={t.tpi} />
+              </div>
+            ))}
           </div>
         </div>
+      ) : (
+        <div className="ec-cards-grid">
+          {filtered.map(t => (
+            <div key={t.id} className="ec-tax-card">
+              <div className="ec-tax-card-head">
+                <div className="ec-tax-card-title">
+                  <b>{t.company_name}</b>
+                  <span>Envio: {t.data_envio} · Venc. TPI: {t.vencimento_tpi}</span>
+                </div>
+                <StatusBadge value={t.status_taxas} />
+              </div>
 
-        <div className="ec-matrix">
-          <div className="ec-m-head">Empresa</div>
-          <div className="ec-m-head">FUNC</div>
-          <div className="ec-m-head">PUB</div>
-          <div className="ec-m-head">SAN</div>
-          <div className="ec-m-head">LOC</div>
-          <div className="ec-m-head">ÁREA</div>
-          <div className="ec-m-head">BOMB</div>
-          <div className="ec-m-head">TPI</div>
-
-          {taxes.map(t => (
-            <div key={t.id} style={{ display: "contents" }}>
-              <div className="ec-m-name">{t.company_name}</div>
-              <TaxCell value={t.taxa_funcionamento} />
-              <TaxCell value={t.taxa_publicidade} />
-              <TaxCell value={t.taxa_vig_sanitaria} />
-              <TaxCell value={t.taxa_localiz_instalacao} />
-              <TaxCell value={t.taxa_ocup_area_publica} />
-              <TaxCell value={t.taxa_bombeiros} />
-              <TaxCell value={t.tpi} />
+              <div className="ec-tax-pills">
+                {TAX_FIELDS.map(f => {
+                  const val = t[f.key] as string;
+                  if (val === "Não exigido") return null;
+                  const s = getLicenceStatus(val);
+                  const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
+                  return (
+                    <div key={f.key} className="ec-tax-pill">
+                      <label>{f.label}</label>
+                      <span className={`ec-status ${cls}`}>{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Detail table */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Detalhes</small>
-            <h3>Taxas por empresa</h3>
-          </div>
-        </div>
-
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>Data envio</th>
-                <th>Status geral</th>
-                <th>Venc. TPI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {taxes.map(t => (
-                <tr key={t.id}>
-                  <td style={{ fontWeight: 600 }}>{t.company_name}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{t.data_envio}</td>
-                  <td><StatusBadge value={t.status_taxas} /></td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{t.vencimento_tpi}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

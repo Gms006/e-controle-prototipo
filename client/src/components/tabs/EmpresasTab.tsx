@@ -1,10 +1,108 @@
+import { useState, useMemo } from "react";
 import { companies } from "@/data/mockData";
-import { Building, MapPin, Phone, Mail, AlertTriangle, ChevronRight } from "lucide-react";
+import {
+  Building,
+  MapPin,
+  Phone,
+  Mail,
+  AlertTriangle,
+  ChevronRight,
+  SearchX,
+} from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+
+const FILTERS = [
+  {
+    key: "municipio",
+    label: "Município",
+    multi: true,
+    options: [
+      { label: "Anápolis", value: "Anápolis" },
+      { label: "Goiânia", value: "Goiânia" },
+      { label: "Aparecida de Goiânia", value: "Aparecida de Goiânia" },
+    ],
+  },
+  {
+    key: "risco",
+    label: "Risco CNAE",
+    multi: true,
+    options: [
+      { label: "Alto", value: "Alto" },
+      { label: "Médio", value: "Médio" },
+      { label: "Baixo", value: "Baixo" },
+    ],
+  },
+  {
+    key: "status",
+    label: "Status",
+    multi: false,
+    options: [
+      { label: "Ativas", value: "ativa" },
+      { label: "Inativas", value: "inativa" },
+    ],
+  },
+  {
+    key: "porte",
+    label: "Porte",
+    multi: true,
+    options: [
+      { label: "Micro", value: "Micro" },
+      { label: "Pequeno", value: "Pequeno" },
+      { label: "Médio", value: "Médio" },
+      { label: "Grande", value: "Grande" },
+    ],
+  },
+];
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(w => w.length > 2)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join("");
+}
 
 export default function EmpresasTab() {
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+
+  function handleFilterChange(key: string, values: string[]) {
+    setActiveFilters(prev => ({ ...prev, [key]: values }));
+  }
+
+  const filtered = useMemo(() => {
+    return companies.filter(c => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (
+          !c.razao_social.toLowerCase().includes(q) &&
+          !c.nome_fantasia.toLowerCase().includes(q) &&
+          !c.cnpj.includes(q) &&
+          !c.municipio.toLowerCase().includes(q)
+        )
+          return false;
+      }
+      if (activeFilters.municipio?.length && !activeFilters.municipio.includes(c.municipio)) return false;
+      if (activeFilters.risco?.length && !activeFilters.risco.includes(c.profile.risco_consolidado)) return false;
+      if (activeFilters.status?.length) {
+        const isAtiva = c.is_active ? "ativa" : "inativa";
+        if (!activeFilters.status.includes(isAtiva)) return false;
+      }
+      if (activeFilters.porte?.length && !activeFilters.porte.includes(c.profile.porte)) return false;
+      return true;
+    });
+  }, [search, activeFilters]);
+
+  const riskAlto = filtered.filter(c => c.profile.risco_consolidado === "Alto").length;
+  const avgScore = filtered.length
+    ? Math.round(filtered.reduce((s, c) => s + c.profile.score_urgencia, 0) / filtered.length)
+    : 0;
+
   return (
     <div className="ec-tab-content">
-      {/* Summary row */}
+      {/* KPIs */}
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
@@ -21,14 +119,16 @@ export default function EmpresasTab() {
               <label>Ativas</label>
               <div className="ec-value">{companies.filter(c => c.is_active).length}</div>
             </div>
-            <div className="ec-kpi-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}><Building size={20} strokeWidth={1.6} /></div>
+            <div className="ec-kpi-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}>
+              <Building size={20} strokeWidth={1.6} />
+            </div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
             <div>
               <label>Risco alto</label>
-              <div className="ec-value">{companies.filter(c => c.profile.risco_consolidado === "Alto").length}</div>
+              <div className="ec-value">{riskAlto}</div>
               <div className="ec-trend warn">Requer atenção</div>
             </div>
             <div className="ec-kpi-icon ec-kpi-icon-red"><AlertTriangle size={20} strokeWidth={1.6} /></div>
@@ -38,122 +138,134 @@ export default function EmpresasTab() {
           <div className="ec-kpi-top">
             <div>
               <label>Score médio</label>
-              <div className="ec-value">{Math.round(companies.reduce((s, c) => s + c.profile.score_urgencia, 0) / companies.length)}</div>
+              <div className="ec-value">{avgScore}</div>
             </div>
             <div className="ec-kpi-icon ec-kpi-icon-amber"><AlertTriangle size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="ec-card">
-        <div className="ec-section-head">
-          <div>
-            <small>Cadastro</small>
-            <h3>Empresas cadastradas</h3>
-          </div>
-          <div className="ec-chip">{companies.length} registros</div>
-        </div>
+      {/* Filters + View Toggle */}
+      <TabFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por nome, CNPJ, município…"
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
+        resultCount={filtered.length}
+      />
 
-        <div className="ec-urgency-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Empresa</th>
-                <th>CNPJ</th>
-                <th>Município</th>
-                <th>Porte</th>
-                <th>Risco</th>
-                <th>Score</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {companies.map(c => (
-                <tr key={c.id}>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{c.nome_fantasia}</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{c.razao_social}</div>
-                  </td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.cnpj}</td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <MapPin size={12} strokeWidth={1.6} style={{ color: "#94a3b8" }} />
-                      {c.municipio}
-                    </div>
-                  </td>
-                  <td>{c.profile.porte}</td>
-                  <td>
-                    <span className={`ec-status ${c.profile.risco_consolidado === "Alto" ? "ec-s-danger" : c.profile.risco_consolidado === "Médio" ? "ec-s-warn" : "ec-s-ok"}`}>
-                      {c.profile.risco_consolidado}
-                    </span>
-                  </td>
-                  <td><div className="ec-score">{c.profile.score_urgencia}</div></td>
-                  <td>
-                    <span className={`ec-status ${c.is_active ? "ec-s-ok" : "ec-s-neutral"}`}>
-                      {c.is_active ? "Ativa" : "Inativa"}
-                    </span>
-                  </td>
-                  <td><ChevronRight size={14} style={{ color: "#94a3b8" }} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Content */}
+      {filtered.length === 0 ? (
+        <div className="ec-card ec-empty-state">
+          <SearchX size={32} />
+          <p>Nenhuma empresa encontrada com os filtros aplicados.</p>
         </div>
-      </div>
-
-      {/* Detail cards */}
-      <div className="ec-section-grid">
+      ) : viewMode === "table" ? (
         <div className="ec-card">
-          <div className="ec-section-head">
-            <div>
-              <small>Contatos</small>
-              <h3>Responsáveis por empresa</h3>
-            </div>
+          <div className="ec-urgency-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>CNPJ</th>
+                  <th>Município</th>
+                  <th>Porte</th>
+                  <th>Risco</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => (
+                  <tr key={c.id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{c.nome_fantasia}</div>
+                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{c.razao_social}</div>
+                    </td>
+                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.cnpj}</td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <MapPin size={12} strokeWidth={1.6} style={{ color: "#94a3b8" }} />
+                        {c.municipio}
+                      </div>
+                    </td>
+                    <td>{c.profile.porte}</td>
+                    <td>
+                      <span className={`ec-status ${c.profile.risco_consolidado === "Alto" ? "ec-s-danger" : c.profile.risco_consolidado === "Médio" ? "ec-s-warn" : "ec-s-ok"}`}>
+                        {c.profile.risco_consolidado}
+                      </span>
+                    </td>
+                    <td><div className="ec-score">{c.profile.score_urgencia}</div></td>
+                    <td>
+                      <span className={`ec-status ${c.is_active ? "ec-s-ok" : "ec-s-neutral"}`}>
+                        {c.is_active ? "Ativa" : "Inativa"}
+                      </span>
+                    </td>
+                    <td><ChevronRight size={14} style={{ color: "#94a3b8" }} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {companies.filter(c => c.is_active).slice(0, 5).map(c => (
-              <div key={c.id} className="ec-saved-view">
-                <div>
+        </div>
+      ) : (
+        <div className="ec-cards-grid">
+          {filtered.map(c => (
+            <div key={c.id} className="ec-company-card">
+              <div className="ec-company-card-head">
+                <div className="ec-company-card-avatar">{initials(c.nome_fantasia)}</div>
+                <div className="ec-company-card-title">
                   <b>{c.nome_fantasia}</b>
-                  <span>{c.profile.proprietario_principal}</span>
-                  <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
-                      <Phone size={10} strokeWidth={1.6} /> {c.profile.telefone}
-                    </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
-                      <Mail size={10} strokeWidth={1.6} /> {c.profile.email}
-                    </span>
-                  </div>
+                  <span>{c.razao_social}</span>
+                </div>
+                <div className="ec-company-card-score">{c.profile.score_urgencia}</div>
+              </div>
+
+              <div className="ec-company-card-meta">
+                <div className="ec-company-card-meta-item">
+                  <label>CNPJ</label>
+                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>{c.cnpj}</span>
+                </div>
+                <div className="ec-company-card-meta-item">
+                  <label>Município</label>
+                  <span>{c.municipio}</span>
+                </div>
+                <div className="ec-company-card-meta-item">
+                  <label>Porte</label>
+                  <span>{c.profile.porte}</span>
+                </div>
+                <div className="ec-company-card-meta-item">
+                  <label>Responsável fiscal</label>
+                  <span style={{ fontSize: 11 }}>{c.profile.responsavel_fiscal}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="ec-card">
-          <div className="ec-section-head">
-            <div>
-              <small>Distribuição</small>
-              <h3>Por município</h3>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {Object.entries(
-              companies.reduce((acc, c) => {
-                acc[c.municipio] = (acc[c.municipio] || 0) + 1;
-                return acc;
-              }, {} as Record<string, number>)
-            ).sort((a, b) => b[1] - a[1]).map(([mun, count]) => (
-              <div key={mun} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8f9fb", borderRadius: 8 }}>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{mun}</span>
-                <span className="ec-chip">{count}</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
+                  <Phone size={11} strokeWidth={1.6} /> {c.profile.telefone}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
+                  <Mail size={11} strokeWidth={1.6} /> {c.profile.email}
+                </span>
               </div>
-            ))}
-          </div>
+
+              <div className="ec-company-card-footer">
+                <span className={`ec-status ${c.profile.risco_consolidado === "Alto" ? "ec-s-danger" : c.profile.risco_consolidado === "Médio" ? "ec-s-warn" : "ec-s-ok"}`}>
+                  Risco {c.profile.risco_consolidado}
+                </span>
+                <span className={`ec-status ${c.is_active ? "ec-s-ok" : "ec-s-neutral"}`}>
+                  {c.is_active ? "Ativa" : "Inativa"}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
