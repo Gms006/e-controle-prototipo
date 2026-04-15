@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { processes } from "@/data/mockData";
-import { FolderKanban, Clock, CheckCircle, AlertTriangle, FileSearch, SearchX, MapPin, Building2 } from "lucide-react";
-import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+import { FolderKanban, Clock, CheckCircle, FileSearch, SearchX, MapPin, Building2 } from "lucide-react";
+import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
   {
@@ -40,6 +40,23 @@ const FILTERS = [
   },
 ];
 
+const SORT_OPTIONS = [
+  { label: "Empresa (A→Z)", value: "company_name" },
+  { label: "Situação", value: "situacao" },
+  { label: "Tipo de processo", value: "tipo" },
+  { label: "Data de solicitação", value: "data_solicitacao" },
+  { label: "Município", value: "municipio" },
+  { label: "Órgão", value: "orgao" },
+];
+
+const SITUACAO_ORDER: Record<string, number> = {
+  Pendente: 0,
+  "Aguardando pagamento": 1,
+  "Em análise": 2,
+  "Em andamento": 3,
+  Deferido: 4,
+};
+
 function SituacaoBadge({ value }: { value: string }) {
   const cls =
     value === "Deferido" ? "ec-s-ok" :
@@ -53,13 +70,20 @@ export default function ProcessosTab() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [sortBy, setSortBy] = useState("situacao");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
   }
 
+  function handleSortChange(value: string, dir: SortDir) {
+    setSortBy(value);
+    setSortDir(dir);
+  }
+
   const filtered = useMemo(() => {
-    return processes.filter(p => {
+    let list = processes.filter(p => {
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -75,7 +99,20 @@ export default function ProcessosTab() {
       if (activeFilters.municipio?.length && !activeFilters.municipio.includes(p.municipio)) return false;
       return true;
     });
-  }, [search, activeFilters]);
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "company_name") cmp = a.company_name.localeCompare(b.company_name);
+      else if (sortBy === "situacao") cmp = (SITUACAO_ORDER[a.situacao] ?? 9) - (SITUACAO_ORDER[b.situacao] ?? 9);
+      else if (sortBy === "tipo") cmp = a.process_type.localeCompare(b.process_type);
+      else if (sortBy === "data_solicitacao") cmp = a.data_solicitacao.localeCompare(b.data_solicitacao);
+      else if (sortBy === "municipio") cmp = a.municipio.localeCompare(b.municipio);
+      else if (sortBy === "orgao") cmp = a.orgao.localeCompare(b.orgao);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [search, activeFilters, sortBy, sortDir]);
 
   const situacoes = filtered.reduce((acc, p) => {
     acc[p.situacao] = (acc[p.situacao] || 0) + 1;
@@ -87,38 +124,25 @@ export default function ProcessosTab() {
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Total de processos</label>
-              <div className="ec-value">{processes.length}</div>
-            </div>
+            <div><label>Total de processos</label><div className="ec-value">{processes.length}</div></div>
             <div className="ec-kpi-icon"><FolderKanban size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Em análise</label>
-              <div className="ec-value">{(situacoes["Em análise"] || 0) + (situacoes["Em andamento"] || 0)}</div>
-            </div>
+            <div><label>Em análise</label><div className="ec-value">{(situacoes["Em análise"] || 0) + (situacoes["Em andamento"] || 0)}</div></div>
             <div className="ec-kpi-icon"><FileSearch size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Pendentes</label>
-              <div className="ec-value">{(situacoes["Pendente"] || 0) + (situacoes["Aguardando pagamento"] || 0)}</div>
-              <div className="ec-trend warn">Requer ação</div>
-            </div>
+            <div><label>Pendentes</label><div className="ec-value">{(situacoes["Pendente"] || 0) + (situacoes["Aguardando pagamento"] || 0)}</div><div className="ec-trend warn">Requer ação</div></div>
             <div className="ec-kpi-icon ec-kpi-icon-amber"><Clock size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Deferidos</label>
-              <div className="ec-value">{situacoes["Deferido"] || 0}</div>
-            </div>
+            <div><label>Deferidos</label><div className="ec-value">{situacoes["Deferido"] || 0}</div></div>
             <div className="ec-kpi-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
@@ -133,26 +157,22 @@ export default function ProcessosTab() {
         filters={FILTERS}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
+        sortOptions={SORT_OPTIONS}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         resultCount={filtered.length}
       />
 
       {filtered.length === 0 ? (
-        <div className="ec-card ec-empty-state">
-          <SearchX size={32} />
-          <p>Nenhum processo encontrado com os filtros aplicados.</p>
-        </div>
+        <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhum processo encontrado.</p></div>
       ) : viewMode === "table" ? (
         <div className="ec-card">
           <div className="ec-urgency-table">
             <table>
               <thead>
                 <tr>
-                  <th>Empresa</th>
-                  <th>Tipo</th>
-                  <th>Protocolo</th>
-                  <th>Órgão</th>
-                  <th>Solicitação</th>
-                  <th>Situação</th>
+                  <th>Empresa</th><th>Tipo</th><th>Protocolo</th><th>Órgão</th><th>Solicitação</th><th>Situação</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,7 +201,6 @@ export default function ProcessosTab() {
                 </div>
                 <SituacaoBadge value={p.situacao} />
               </div>
-
               <div className="ec-process-card-meta">
                 <div className="ec-process-card-row">
                   <label>Protocolo</label>
@@ -196,10 +215,7 @@ export default function ProcessosTab() {
                   <span>{p.municipio}</span>
                 </div>
               </div>
-
-              {p.obs && (
-                <div className="ec-process-card-obs">{p.obs}</div>
-              )}
+              {p.obs && <div className="ec-process-card-obs">{p.obs}</div>}
             </div>
           ))}
         </div>

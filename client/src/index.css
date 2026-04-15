@@ -1766,3 +1766,43 @@ body {
   margin: 0;
   font-size: 14px;
 }
+
+/* ─── Sort Dropdown ─── */
+.ec-sort-separator {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.ec-sort-btn {
+  gap: 6px;
+  color: #475569;
+  background: #f8f9fb;
+  border-color: #e2e8f0;
+  font-weight: 500;
+}
+
+.ec-sort-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.ec-sort-dir-icon {
+  color: #2563eb;
+}
+
+.ec-sort-menu {
+  min-width: 220px;
+}
+
+.ec-sort-menu-header {
+  padding: 6px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2px;
+}

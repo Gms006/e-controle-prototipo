@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, LayoutGrid, List, X, ChevronDown } from "lucide-react";
+import { Search, LayoutGrid, List, X, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 export type ViewMode = "table" | "cards";
+export type SortDir = "asc" | "desc";
+
+export interface SortOption {
+  label: string;
+  value: string;
+}
 
 export interface FilterOption {
   label: string;
@@ -28,6 +34,10 @@ interface TabFiltersProps {
   filters: FilterDef[];
   activeFilters: ActiveFilters;
   onFilterChange: (key: string, values: string[]) => void;
+  sortOptions: SortOption[];
+  sortBy: string;
+  sortDir: SortDir;
+  onSortChange: (value: string, dir: SortDir) => void;
   resultCount?: number;
 }
 
@@ -103,6 +113,79 @@ function FilterDropdown({
   );
 }
 
+function SortDropdown({
+  options,
+  sortBy,
+  sortDir,
+  onChange,
+}: {
+  options: SortOption[];
+  sortBy: string;
+  sortDir: SortDir;
+  onChange: (value: string, dir: SortDir) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const current = options.find(o => o.value === sortBy);
+
+  function handleSelect(value: string) {
+    if (value === sortBy) {
+      // Toggle direction
+      onChange(value, sortDir === "asc" ? "desc" : "asc");
+    } else {
+      onChange(value, "asc");
+      setOpen(false);
+    }
+  }
+
+  const DirIcon = sortDir === "asc" ? ArrowUp : ArrowDown;
+
+  return (
+    <div className="ec-filter-dd ec-sort-dd" ref={ref}>
+      <button
+        className="ec-filter-dd-btn ec-sort-btn"
+        onClick={() => setOpen(o => !o)}
+        title="Ordenar por"
+      >
+        <ArrowUpDown size={13} strokeWidth={2} />
+        <span>{current?.label ?? "Ordenar"}</span>
+        <DirIcon size={11} strokeWidth={2.5} className="ec-sort-dir-icon" />
+      </button>
+      {open && (
+        <div className="ec-filter-dd-menu ec-sort-menu">
+          <div className="ec-sort-menu-header">Ordenar por</div>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              className={`ec-filter-dd-item ${sortBy === opt.value ? "selected" : ""}`}
+              onClick={() => handleSelect(opt.value)}
+            >
+              <span className="ec-filter-dd-check">
+                {sortBy === opt.value ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              </span>
+              {opt.label}
+              {sortBy === opt.value && (
+                <span style={{ marginLeft: "auto", fontSize: 10, color: "#64748b" }}>
+                  {sortDir === "asc" ? "A→Z / Menor" : "Z→A / Maior"}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TabFilters({
   viewMode,
   onViewModeChange,
@@ -112,6 +195,10 @@ export default function TabFilters({
   filters,
   activeFilters,
   onFilterChange,
+  sortOptions,
+  sortBy,
+  sortDir,
+  onSortChange,
   resultCount,
 }: TabFiltersProps) {
   const hasAnyFilter = search.length > 0 || Object.values(activeFilters).some(v => v.length > 0);
@@ -151,6 +238,15 @@ export default function TabFilters({
             />
           ))}
         </div>
+
+        {/* Sort */}
+        <div className="ec-sort-separator" />
+        <SortDropdown
+          options={sortOptions}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onChange={onSortChange}
+        />
 
         <div style={{ flex: 1 }} />
 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { taxes, getLicenceStatus } from "@/data/mockData";
 import { Receipt, AlertTriangle, CheckCircle, Clock, SearchX } from "lucide-react";
-import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
   {
@@ -36,6 +36,16 @@ const FILTERS = [
   },
 ];
 
+const SORT_OPTIONS = [
+  { label: "Empresa (A→Z)", value: "company_name" },
+  { label: "Status geral", value: "status" },
+  { label: "Data de envio", value: "data_envio" },
+  { label: "Vencimento TPI", value: "vencimento_tpi" },
+  { label: "TPI", value: "tpi" },
+];
+
+const STATUS_ORDER: Record<string, number> = { Irregular: 0, Pendente: 1, "Em dia": 2 };
+
 const TAX_FIELDS: { key: keyof typeof taxes[0]; label: string }[] = [
   { key: "taxa_funcionamento", label: "Funcionamento" },
   { key: "taxa_publicidade", label: "Publicidade" },
@@ -62,13 +72,20 @@ export default function TaxasTab() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [sortBy, setSortBy] = useState("status");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
   }
 
+  function handleSortChange(value: string, dir: SortDir) {
+    setSortBy(value);
+    setSortDir(dir);
+  }
+
   const filtered = useMemo(() => {
-    return taxes.filter(t => {
+    let list = taxes.filter(t => {
       if (search) {
         const q = search.toLowerCase();
         if (!t.company_name.toLowerCase().includes(q)) return false;
@@ -78,7 +95,19 @@ export default function TaxasTab() {
       if (activeFilters.bombeiros?.length && !activeFilters.bombeiros.includes(t.taxa_bombeiros)) return false;
       return true;
     });
-  }, [search, activeFilters]);
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "company_name") cmp = a.company_name.localeCompare(b.company_name);
+      else if (sortBy === "status") cmp = (STATUS_ORDER[a.status_taxas] ?? 9) - (STATUS_ORDER[b.status_taxas] ?? 9);
+      else if (sortBy === "data_envio") cmp = a.data_envio.localeCompare(b.data_envio);
+      else if (sortBy === "vencimento_tpi") cmp = a.vencimento_tpi.localeCompare(b.vencimento_tpi);
+      else if (sortBy === "tpi") cmp = a.tpi.localeCompare(b.tpi);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [search, activeFilters, sortBy, sortDir]);
 
   const emDia = filtered.filter(t => t.status_taxas === "Em dia").length;
   const pendentes = filtered.filter(t => t.status_taxas === "Pendente").length;
@@ -89,38 +118,25 @@ export default function TaxasTab() {
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Total de registros</label>
-              <div className="ec-value">{taxes.length}</div>
-            </div>
+            <div><label>Total de registros</label><div className="ec-value">{taxes.length}</div></div>
             <div className="ec-kpi-icon"><Receipt size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Em dia</label>
-              <div className="ec-value">{emDia}</div>
-            </div>
+            <div><label>Em dia</label><div className="ec-value">{emDia}</div></div>
             <div className="ec-kpi-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Pendentes</label>
-              <div className="ec-value">{pendentes}</div>
-            </div>
+            <div><label>Pendentes</label><div className="ec-value">{pendentes}</div></div>
             <div className="ec-kpi-icon ec-kpi-icon-amber"><Clock size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Irregulares</label>
-              <div className="ec-value">{irregulares}</div>
-              <div className="ec-trend warn">Ação necessária</div>
-            </div>
+            <div><label>Irregulares</label><div className="ec-value">{irregulares}</div><div className="ec-trend warn">Ação necessária</div></div>
             <div className="ec-kpi-icon ec-kpi-icon-red"><AlertTriangle size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
@@ -135,22 +151,18 @@ export default function TaxasTab() {
         filters={FILTERS}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
+        sortOptions={SORT_OPTIONS}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         resultCount={filtered.length}
       />
 
       {filtered.length === 0 ? (
-        <div className="ec-card ec-empty-state">
-          <SearchX size={32} />
-          <p>Nenhum registro encontrado com os filtros aplicados.</p>
-        </div>
+        <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhum registro encontrado.</p></div>
       ) : viewMode === "table" ? (
         <div className="ec-card">
-          <div className="ec-section-head">
-            <div>
-              <small>Taxas</small>
-              <h3>Matriz semafórica por empresa</h3>
-            </div>
-          </div>
+          <div className="ec-section-head"><div><small>Taxas</small><h3>Matriz semafórica por empresa</h3></div></div>
           <div className="ec-matrix">
             <div className="ec-m-head">Empresa</div>
             <div className="ec-m-head">FUNC</div>
@@ -185,7 +197,6 @@ export default function TaxasTab() {
                 </div>
                 <StatusBadge value={t.status_taxas} />
               </div>
-
               <div className="ec-tax-pills">
                 {TAX_FIELDS.map(f => {
                   const val = t[f.key] as string;

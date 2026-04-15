@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { certificates, getCertStatus } from "@/data/mockData";
 import { ShieldCheck, ShieldAlert, Clock, KeyRound, SearchX } from "lucide-react";
-import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
   {
@@ -27,6 +27,16 @@ const FILTERS = [
   },
 ];
 
+const SORT_OPTIONS = [
+  { label: "Empresa (A→Z)", value: "company_name" },
+  { label: "Status (urgência)", value: "status" },
+  { label: "Válido até", value: "not_after" },
+  { label: "Válido desde", value: "not_before" },
+  { label: "Emissor", value: "issuer_cn" },
+];
+
+const STATUS_ORDER: Record<string, number> = { danger: 0, warn: 1, ok: 2 };
+
 function validityPercent(notBefore: string, notAfter: string): number {
   const start = new Date(notBefore).getTime();
   const end = new Date(notAfter).getTime();
@@ -40,13 +50,20 @@ export default function CertificadosTab() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [sortBy, setSortBy] = useState("status");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
   }
 
+  function handleSortChange(value: string, dir: SortDir) {
+    setSortBy(value);
+    setSortDir(dir);
+  }
+
   const filtered = useMemo(() => {
-    return certificates.filter(c => {
+    let list = certificates.filter(c => {
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -63,7 +80,19 @@ export default function CertificadosTab() {
       if (activeFilters.emissor?.length && !activeFilters.emissor.includes(c.issuer_cn)) return false;
       return true;
     });
-  }, [search, activeFilters]);
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "company_name") cmp = a.company_name.localeCompare(b.company_name);
+      else if (sortBy === "status") cmp = (STATUS_ORDER[getCertStatus(a.not_after).status] ?? 9) - (STATUS_ORDER[getCertStatus(b.not_after).status] ?? 9);
+      else if (sortBy === "not_after") cmp = a.not_after.localeCompare(b.not_after);
+      else if (sortBy === "not_before") cmp = a.not_before.localeCompare(b.not_before);
+      else if (sortBy === "issuer_cn") cmp = a.issuer_cn.localeCompare(b.issuer_cn);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [search, activeFilters, sortBy, sortDir]);
 
   const statuses = filtered.map(c => getCertStatus(c.not_after));
   const validos = statuses.filter(s => s.status === "ok").length;
@@ -75,39 +104,25 @@ export default function CertificadosTab() {
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Total de certificados</label>
-              <div className="ec-value">{certificates.length}</div>
-            </div>
+            <div><label>Total de certificados</label><div className="ec-value">{certificates.length}</div></div>
             <div className="ec-kpi-icon"><KeyRound size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Válidos</label>
-              <div className="ec-value">{validos}</div>
-            </div>
+            <div><label>Válidos</label><div className="ec-value">{validos}</div></div>
             <div className="ec-kpi-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}><ShieldCheck size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Vencendo (30d)</label>
-              <div className="ec-value">{vencendo}</div>
-              <div className="ec-trend warn">Renovar em breve</div>
-            </div>
+            <div><label>Vencendo (30d)</label><div className="ec-value">{vencendo}</div><div className="ec-trend warn">Renovar em breve</div></div>
             <div className="ec-kpi-icon ec-kpi-icon-amber"><Clock size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div>
-              <label>Vencidos</label>
-              <div className="ec-value">{vencidos}</div>
-              <div className="ec-trend warn">Ação imediata</div>
-            </div>
+            <div><label>Vencidos</label><div className="ec-value">{vencidos}</div><div className="ec-trend warn">Ação imediata</div></div>
             <div className="ec-kpi-icon ec-kpi-icon-red"><ShieldAlert size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
@@ -122,26 +137,22 @@ export default function CertificadosTab() {
         filters={FILTERS}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
+        sortOptions={SORT_OPTIONS}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         resultCount={filtered.length}
       />
 
       {filtered.length === 0 ? (
-        <div className="ec-card ec-empty-state">
-          <SearchX size={32} />
-          <p>Nenhum certificado encontrado com os filtros aplicados.</p>
-        </div>
+        <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhum certificado encontrado.</p></div>
       ) : viewMode === "table" ? (
         <div className="ec-card">
           <div className="ec-urgency-table">
             <table>
               <thead>
                 <tr>
-                  <th>Empresa</th>
-                  <th>CNPJ</th>
-                  <th>Emissor</th>
-                  <th>Válido desde</th>
-                  <th>Válido até</th>
-                  <th>Status</th>
+                  <th>Empresa</th><th>CNPJ</th><th>Emissor</th><th>Válido desde</th><th>Válido até</th><th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,7 +201,6 @@ export default function CertificadosTab() {
                     {st.label}
                   </span>
                 </div>
-
                 <div className="ec-cert-card-validity">
                   <label>Período de validade</label>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginTop: 2 }}>
@@ -198,13 +208,9 @@ export default function CertificadosTab() {
                     <span style={{ fontFamily: "monospace" }}>{c.not_after}</span>
                   </div>
                   <div className="ec-cert-card-validity-bar">
-                    <div
-                      className="ec-cert-card-validity-fill"
-                      style={{ width: `${pct}%`, background: barColor }}
-                    />
+                    <div className="ec-cert-card-validity-fill" style={{ width: `${pct}%`, background: barColor }} />
                   </div>
                 </div>
-
                 <div className="ec-cert-card-meta">
                   <div className="ec-cert-card-meta-item">
                     <label>Emissor</label>

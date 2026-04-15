@@ -9,7 +9,7 @@ import {
   ChevronRight,
   SearchX,
 } from "lucide-react";
-import TabFilters, { ViewMode, ActiveFilters } from "@/components/TabFilters";
+import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
   {
@@ -54,6 +54,17 @@ const FILTERS = [
   },
 ];
 
+const SORT_OPTIONS = [
+  { label: "Nome fantasia", value: "nome_fantasia" },
+  { label: "Score de urgência", value: "score" },
+  { label: "Município", value: "municipio" },
+  { label: "Porte", value: "porte" },
+  { label: "Risco CNAE", value: "risco" },
+];
+
+const RISCO_ORDER: Record<string, number> = { Alto: 0, Médio: 1, Baixo: 2 };
+const PORTE_ORDER: Record<string, number> = { Grande: 0, Médio: 1, Pequeno: 2, Micro: 3 };
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -67,13 +78,20 @@ export default function EmpresasTab() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [sortBy, setSortBy] = useState("score");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
   }
 
+  function handleSortChange(value: string, dir: SortDir) {
+    setSortBy(value);
+    setSortDir(dir);
+  }
+
   const filtered = useMemo(() => {
-    return companies.filter(c => {
+    let list = companies.filter(c => {
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -93,7 +111,19 @@ export default function EmpresasTab() {
       if (activeFilters.porte?.length && !activeFilters.porte.includes(c.profile.porte)) return false;
       return true;
     });
-  }, [search, activeFilters]);
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "nome_fantasia") cmp = a.nome_fantasia.localeCompare(b.nome_fantasia);
+      else if (sortBy === "score") cmp = a.profile.score_urgencia - b.profile.score_urgencia;
+      else if (sortBy === "municipio") cmp = a.municipio.localeCompare(b.municipio);
+      else if (sortBy === "porte") cmp = (PORTE_ORDER[a.profile.porte] ?? 9) - (PORTE_ORDER[b.profile.porte] ?? 9);
+      else if (sortBy === "risco") cmp = (RISCO_ORDER[a.profile.risco_consolidado] ?? 9) - (RISCO_ORDER[b.profile.risco_consolidado] ?? 9);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [search, activeFilters, sortBy, sortDir]);
 
   const riskAlto = filtered.filter(c => c.profile.risco_consolidado === "Alto").length;
   const avgScore = filtered.length
@@ -102,7 +132,6 @@ export default function EmpresasTab() {
 
   return (
     <div className="ec-tab-content">
-      {/* KPIs */}
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
@@ -145,7 +174,6 @@ export default function EmpresasTab() {
         </div>
       </div>
 
-      {/* Filters + View Toggle */}
       <TabFilters
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -155,10 +183,13 @@ export default function EmpresasTab() {
         filters={FILTERS}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
+        sortOptions={SORT_OPTIONS}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
         resultCount={filtered.length}
       />
 
-      {/* Content */}
       {filtered.length === 0 ? (
         <div className="ec-card ec-empty-state">
           <SearchX size={32} />
@@ -225,7 +256,6 @@ export default function EmpresasTab() {
                 </div>
                 <div className="ec-company-card-score">{c.profile.score_urgencia}</div>
               </div>
-
               <div className="ec-company-card-meta">
                 <div className="ec-company-card-meta-item">
                   <label>CNPJ</label>
@@ -244,7 +274,6 @@ export default function EmpresasTab() {
                   <span style={{ fontSize: 11 }}>{c.profile.responsavel_fiscal}</span>
                 </div>
               </div>
-
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
                   <Phone size={11} strokeWidth={1.6} /> {c.profile.telefone}
@@ -253,7 +282,6 @@ export default function EmpresasTab() {
                   <Mail size={11} strokeWidth={1.6} /> {c.profile.email}
                 </span>
               </div>
-
               <div className="ec-company-card-footer">
                 <span className={`ec-status ${c.profile.risco_consolidado === "Alto" ? "ec-s-danger" : c.profile.risco_consolidado === "Médio" ? "ec-s-warn" : "ec-s-ok"}`}>
                   Risco {c.profile.risco_consolidado}
