@@ -10,6 +10,7 @@ import {
   SearchX,
 } from "lucide-react";
 import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
+import CompanyModal from "@/components/CompanyModal";
 
 const FILTERS = [
   {
@@ -80,6 +81,7 @@ export default function EmpresasTab() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [sortBy, setSortBy] = useState("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
@@ -132,6 +134,7 @@ export default function EmpresasTab() {
 
   return (
     <div className="ec-tab-content">
+      {/* KPIs */}
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
@@ -213,7 +216,11 @@ export default function EmpresasTab() {
               </thead>
               <tbody>
                 {filtered.map(c => (
-                  <tr key={c.id}>
+                  <tr
+                    key={c.id}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setSelectedCompanyId(c.id)}
+                  >
                     <td>
                       <div style={{ fontWeight: 600 }}>{c.nome_fantasia}</div>
                       <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{c.razao_social}</div>
@@ -237,7 +244,9 @@ export default function EmpresasTab() {
                         {c.is_active ? "Ativa" : "Inativa"}
                       </span>
                     </td>
-                    <td><ChevronRight size={14} style={{ color: "#94a3b8" }} /></td>
+                    <td>
+                      <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -247,7 +256,12 @@ export default function EmpresasTab() {
       ) : (
         <div className="ec-cards-grid">
           {filtered.map(c => (
-            <div key={c.id} className="ec-company-card">
+            <div
+              key={c.id}
+              className="ec-company-card"
+              style={{ cursor: "pointer" }}
+              onClick={() => setSelectedCompanyId(c.id)}
+            >
               <div className="ec-company-card-head">
                 <div className="ec-company-card-avatar">{initials(c.nome_fantasia)}</div>
                 <div className="ec-company-card-title">
@@ -293,6 +307,14 @@ export default function EmpresasTab() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Company Modal */}
+      {selectedCompanyId && (
+        <CompanyModal
+          companyId={selectedCompanyId}
+          onClose={() => setSelectedCompanyId(null)}
+        />
       )}
     </div>
   );
