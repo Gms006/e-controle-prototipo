@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 import CompanyModal from "@/components/CompanyModal";
+import NewCompanyModal from "@/components/NewCompanyModal";
+import { Plus } from "lucide-react";
 
 const FILTERS = [
   {
@@ -82,6 +84,7 @@ export default function EmpresasTab() {
   const [sortBy, setSortBy] = useState("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [showNewCompany, setShowNewCompany] = useState(false);
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
@@ -177,21 +180,28 @@ export default function EmpresasTab() {
         </div>
       </div>
 
-      <TabFilters
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar por nome, CNPJ, município…"
-        filters={FILTERS}
-        activeFilters={activeFilters}
-        onFilterChange={handleFilterChange}
-        sortOptions={SORT_OPTIONS}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onSortChange={handleSortChange}
-        resultCount={filtered.length}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <TabFilters
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Buscar por nome, CNPJ, município…"
+            filters={FILTERS}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            sortOptions={SORT_OPTIONS}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={handleSortChange}
+            resultCount={filtered.length}
+          />
+        </div>
+        <button className="ec-btn-primary" style={{ flexShrink: 0 }} onClick={() => setShowNewCompany(true)}>
+          <Plus size={14} strokeWidth={1.6} /> Nova Empresa
+        </button>
+      </div>
 
       {filtered.length === 0 ? (
         <div className="ec-card ec-empty-state">
@@ -315,6 +325,11 @@ export default function EmpresasTab() {
           companyId={selectedCompanyId}
           onClose={() => setSelectedCompanyId(null)}
         />
+      )}
+
+      {/* New Company Modal */}
+      {showNewCompany && (
+        <NewCompanyModal onClose={() => setShowNewCompany(false)} />
       )}
     </div>
   );

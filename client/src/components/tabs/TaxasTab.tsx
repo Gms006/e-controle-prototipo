@@ -188,31 +188,46 @@ export default function TaxasTab() {
         </div>
       ) : (
         <div className="ec-cards-grid">
-          {filtered.map(t => (
-            <div key={t.id} className="ec-tax-card">
-              <div className="ec-tax-card-head">
-                <div className="ec-tax-card-title">
-                  <b>{t.company_name}</b>
-                  <span>Envio: {t.data_envio} · Venc. TPI: {t.vencimento_tpi}</span>
-                </div>
-                <StatusBadge value={t.status_taxas} />
-              </div>
-              <div className="ec-tax-pills">
-                {TAX_FIELDS.map(f => {
-                  const val = t[f.key] as string;
-                  if (val === "Não exigido") return null;
-                  const s = getLicenceStatus(val);
-                  const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
-                  return (
-                    <div key={f.key} className="ec-tax-pill">
-                      <label>{f.label}</label>
-                      <span className={`ec-status ${cls}`}>{val}</span>
+          {filtered.map(t => {
+            // Format vencimento_tpi as dd/mm
+            const tpiVenc = t.vencimento_tpi
+              ? (() => { const d = new Date(t.vencimento_tpi); return isNaN(d.getTime()) ? t.vencimento_tpi : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; })()
+              : null;
+            return (
+              <div key={t.id} className="ec-tax-card">
+                <div className="ec-tax-card-head">
+                  <div className="ec-tax-card-title">
+                    <b>{t.company_name}</b>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span className="ec-tax-meta-chip">CNPJ {t.company_id}</span>
+                      <span className="ec-tax-meta-chip">Último envio: {t.data_envio}</span>
+                      <span className="ec-tax-meta-chip" style={{ background: 'transparent', border: '1px solid #e2e8f0' }}>Pessoal</span>
                     </div>
-                  );
-                })}
+                  </div>
+                  <StatusBadge value={t.status_taxas} />
+                </div>
+                <div className="ec-tax-list">
+                  {TAX_FIELDS.map(f => {
+                    const val = t[f.key as keyof typeof t] as string;
+                    const isTpi = f.key === 'tpi';
+                    const s = getLicenceStatus(val);
+                    const cls = s === 'ok' ? 'ec-s-ok' : s === 'warn' ? 'ec-s-warn' : s === 'danger' ? 'ec-s-danger' : 'ec-s-neutral';
+                    return (
+                      <div key={f.key} className="ec-tax-list-row">
+                        <span className="ec-tax-list-label">{f.label.toUpperCase()}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {isTpi && tpiVenc && val !== 'Isento' && val !== 'Não exigido' && (
+                            <span className="ec-tax-venc-chip">Venc.: {tpiVenc}</span>
+                          )}
+                          <span className={`ec-status ${cls}`}>{val}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

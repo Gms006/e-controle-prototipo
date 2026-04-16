@@ -402,14 +402,20 @@ function TaxasTabModal({ compTaxes }: { compTaxes: typeof taxes }) {
     return <div className="ec-modal-empty"><Receipt size={28} /><p>Nenhuma taxa cadastrada para esta empresa.</p></div>;
   }
   const t = compTaxes[0];
+
+  // Format TPI due date as dd/mm
+  const tpiVenc = t.vencimento_tpi
+    ? (() => { const d = new Date(t.vencimento_tpi); return isNaN(d.getTime()) ? t.vencimento_tpi : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; })()
+    : null;
+
   const rows = [
-    { label: "TPI", value: t.tpi },
-    { label: "Taxa de Funcionamento", value: t.taxa_funcionamento },
-    { label: "Taxa de Publicidade", value: t.taxa_publicidade },
-    { label: "Taxa de Vigilância Sanitária", value: t.taxa_vig_sanitaria },
-    { label: "Taxa de Localização/Instalação", value: t.taxa_localiz_instalacao },
-    { label: "Taxa de Ocupação de Área Pública", value: t.taxa_ocup_area_publica },
-    { label: "Taxa de Bombeiros", value: t.taxa_bombeiros },
+    { label: "Funcionamento", value: t.taxa_funcionamento, isTpi: false },
+    { label: "Publicidade", value: t.taxa_publicidade, isTpi: false },
+    { label: "Sanitária", value: t.taxa_vig_sanitaria, isTpi: false },
+    { label: "Localização/Instalação", value: t.taxa_localiz_instalacao, isTpi: false },
+    { label: "Área Pública", value: t.taxa_ocup_area_publica, isTpi: false },
+    { label: "Bombeiros", value: t.taxa_bombeiros, isTpi: false },
+    { label: "TPI", value: t.tpi, isTpi: true },
   ];
 
   return (
@@ -418,10 +424,7 @@ function TaxasTabModal({ compTaxes }: { compTaxes: typeof taxes }) {
         <thead>
           <tr>
             <th>Taxa</th>
-            <th>Competência</th>
-            <th>Vencimento</th>
-            <th>Valor</th>
-            <th>Status</th>
+            <th style={{ textAlign: 'right' }}>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -431,10 +434,14 @@ function TaxasTabModal({ compTaxes }: { compTaxes: typeof taxes }) {
             return (
               <tr key={i}>
                 <td style={{ fontWeight: 500 }}>{r.label}</td>
-                <td style={{ color: "#94a3b8" }}>—</td>
-                <td style={{ color: "#94a3b8" }}>—</td>
-                <td style={{ color: "#94a3b8" }}>—</td>
-                <td><span className={`ec-status ${cls}`}>{r.value}</span></td>
+                <td style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                    {r.isTpi && tpiVenc && r.value !== 'Isento' && r.value !== 'Não exigido' && (
+                      <span className="ec-tax-venc-chip">Venc.: {tpiVenc}</span>
+                    )}
+                    <span className={`ec-status ${cls}`}>{r.value}</span>
+                  </div>
+                </td>
               </tr>
             );
           })}

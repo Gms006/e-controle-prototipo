@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { processes } from "@/data/mockData";
-import { FolderKanban, Clock, CheckCircle, FileSearch, SearchX, MapPin, Building2 } from "lucide-react";
+import { FolderKanban, Clock, CheckCircle, FileSearch, SearchX, MapPin, Building2, Plus } from "lucide-react";
+import NewProcessModal from "@/components/NewProcessModal";
 import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
@@ -72,6 +73,7 @@ export default function ProcessosTab() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [sortBy, setSortBy] = useState("situacao");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [showNewProcess, setShowNewProcess] = useState(false);
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
@@ -148,21 +150,28 @@ export default function ProcessosTab() {
         </div>
       </div>
 
-      <TabFilters
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar por empresa, protocolo, órgão…"
-        filters={FILTERS}
-        activeFilters={activeFilters}
-        onFilterChange={handleFilterChange}
-        sortOptions={SORT_OPTIONS}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onSortChange={handleSortChange}
-        resultCount={filtered.length}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <TabFilters
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Buscar por empresa, protocolo, órgão…"
+            filters={FILTERS}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            sortOptions={SORT_OPTIONS}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={handleSortChange}
+            resultCount={filtered.length}
+          />
+        </div>
+        <button className="ec-btn-primary" style={{ flexShrink: 0 }} onClick={() => setShowNewProcess(true)}>
+          <Plus size={14} strokeWidth={1.6} /> Novo Processo
+        </button>
+      </div>
 
       {filtered.length === 0 ? (
         <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhum processo encontrado.</p></div>
@@ -219,6 +228,10 @@ export default function ProcessosTab() {
             </div>
           ))}
         </div>
+      )}
+      {/* New Process Modal */}
+      {showNewProcess && (
+        <NewProcessModal onClose={() => setShowNewProcess(false)} />
       )}
     </div>
   );
