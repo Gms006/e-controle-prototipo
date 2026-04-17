@@ -39,6 +39,7 @@ interface TabFiltersProps {
   sortDir: SortDir;
   onSortChange: (value: string, dir: SortDir) => void;
   resultCount?: number;
+  hideViewToggle?: boolean;
 }
 
 function FilterDropdown({
@@ -200,6 +201,7 @@ export default function TabFilters({
   sortDir,
   onSortChange,
   resultCount,
+  hideViewToggle = false,
 }: TabFiltersProps) {
   const hasAnyFilter = search.length > 0 || Object.values(activeFilters).some(v => v.length > 0);
 
@@ -263,22 +265,24 @@ export default function TabFilters({
         )}
 
         {/* View toggle */}
-        <div className="ec-view-toggle">
-          <button
-            className={viewMode === "table" ? "active" : ""}
-            onClick={() => onViewModeChange("table")}
-            title="Tabela"
-          >
-            <List size={15} strokeWidth={2} />
-          </button>
-          <button
-            className={viewMode === "cards" ? "active" : ""}
-            onClick={() => onViewModeChange("cards")}
-            title="Cards"
-          >
-            <LayoutGrid size={15} strokeWidth={2} />
-          </button>
-        </div>
+        {!hideViewToggle && (
+          <div className="ec-view-toggle">
+            <button
+              className={viewMode === "table" ? "active" : ""}
+              onClick={() => onViewModeChange("table")}
+              title="Tabela"
+            >
+              <List size={15} strokeWidth={2} />
+            </button>
+            <button
+              className={viewMode === "cards" ? "active" : ""}
+              onClick={() => onViewModeChange("cards")}
+              title="Cards"
+            >
+              <LayoutGrid size={15} strokeWidth={2} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

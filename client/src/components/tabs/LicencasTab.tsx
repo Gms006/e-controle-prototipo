@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { licences, getLicenceStatus } from "@/data/mockData";
-import { ScrollText, ShieldAlert, ShieldCheck, Clock, SearchX } from "lucide-react";
+import { licences, companies, getLicenceStatus } from "@/data/mockData";
+import { ScrollText, ShieldAlert, ShieldCheck, Clock, SearchX, RefreshCw, LayoutGrid } from "lucide-react";
 import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
 
 const FILTERS = [
@@ -47,18 +47,6 @@ const SORT_OPTIONS = [
 
 const STATUS_ORDER: Record<string, number> = { danger: 0, warn: 1, neutral: 2, ok: 3 };
 
-function overallStatus(l: typeof licences[0]): number {
-  const vals = [l.alvara_vig_sanitaria, l.cercon, l.alvara_funcionamento, l.licenca_ambiental, l.certidao_uso_solo];
-  const statuses = vals.map(v => STATUS_ORDER[getLicenceStatus(v)] ?? 9);
-  return Math.min(...statuses);
-}
-
-function StatusBadge({ value }: { value: string }) {
-  const s = getLicenceStatus(value);
-  const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
-  return <span className={`ec-status ${cls}`}>{value}</span>;
-}
-
 const LICENCE_TYPES: { key: keyof typeof licences[0]; label: string; dateKey: keyof typeof licences[0] }[] = [
   { key: "alvara_vig_sanitaria", label: "Vig. Sanitária", dateKey: "alvara_vig_sanitaria_valid_until" },
   { key: "cercon", label: "CERCON", dateKey: "cercon_valid_until" },
@@ -67,7 +55,231 @@ const LICENCE_TYPES: { key: keyof typeof licences[0]; label: string; dateKey: ke
   { key: "certidao_uso_solo", label: "Uso do Solo", dateKey: "certidao_uso_solo_valid_until" },
 ];
 
+function overallStatus(l: typeof licences[0]): number {
+  const vals = LICENCE_TYPES.map(t => STATUS_ORDER[getLicenceStatus(l[t.key] as string)] ?? 9);
+  return Math.min(...vals);
+}
+
+function StatusBadge({ value }: { value: string }) {
+  const s = getLicenceStatus(value);
+  const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
+  return <span className={`ec-status ${cls}`}>{value}</span>;
+}
+
+// ─── Sub-aba: Por Tipo ───────────────────────────────────────────────────────
+function PorTipoView({ filtered }: { filtered: typeof licences }) {
+  const [activeTipo, setActiveTipo] = useState<string>("Funcionamento");
+
+  const tipoData = useMemo(() => {
+    const tipo = LICENCE_TYPES.find(t => t.label === activeTipo)!;
+    return filtered
+      .map(l => ({
+        id: l.id,
+        company_name: l.company_name,
+        municipio: l.municipio,
+        status: l[tipo.key] as string,
+        valid_until: l[tipo.dateKey] as string | null,
+      }))
+      .filter(r => r.status !== "Não exigido")
+      .sort((a, b) => (STATUS_ORDER[getLicenceStatus(a.status)] ?? 9) - (STATUS_ORDER[getLicenceStatus(b.status)] ?? 9));
+  }, [filtered, activeTipo]);
+
+  const counts = useMemo(() => {
+    return LICENCE_TYPES.reduce((acc, t) => {
+      const vals = filtered.map(l => l[t.key] as string).filter(v => v !== "Não exigido");
+      acc[t.label] = {
+        total: vals.length,
+        danger: vals.filter(v => getLicenceStatus(v) === "danger").length,
+        warn: vals.filter(v => getLicenceStatus(v) === "warn").length,
+      };
+      return acc;
+    }, {} as Record<string, { total: number; danger: number; warn: number }>);
+  }, [filtered]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Tipo selector */}
+      <div className="ec-tipo-bar">
+        {LICENCE_TYPES.map(t => {
+          const c = counts[t.label];
+          const hasIssue = c.danger > 0 || c.warn > 0;
+          return (
+            <button
+              key={t.label}
+              className={`ec-tipo-btn${activeTipo === t.label ? " active" : ""}${c.danger > 0 ? " has-danger" : c.warn > 0 ? " has-warn" : ""}`}
+              onClick={() => setActiveTipo(t.label)}
+            >
+              <span className="ec-tipo-btn-label">{t.label}</span>
+              <span className="ec-tipo-btn-count">{c.total}</span>
+              {hasIssue && (
+                <span className={`ec-tipo-btn-alert ${c.danger > 0 ? "danger" : "warn"}`}>
+                  {c.danger > 0 ? c.danger : c.warn}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Summary chips */}
+      <div className="ec-tipo-summary">
+        {(["Válido", "Vencendo", "Vencido", "Pendente", "Em andamento"] as const).map(status => {
+          const count = tipoData.filter(r => r.status === status).length;
+          if (count === 0) return null;
+          const s = getLicenceStatus(status);
+          const cls = s === "ok" ? "ec-s-ok" : s === "warn" ? "ec-s-warn" : s === "danger" ? "ec-s-danger" : "ec-s-neutral";
+          return (
+            <span key={status} className={`ec-tipo-chip ec-status ${cls}`}>
+              {status} <b>{count}</b>
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Table */}
+      <div className="ec-card">
+        <div className="ec-urgency-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Município</th>
+                <th>Validade</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tipoData.map(r => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.company_name}</td>
+                  <td>{r.municipio}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{r.valid_until ?? "—"}</td>
+                  <td><StatusBadge value={r.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-aba: Renovações ─────────────────────────────────────────────────────
+function RenovacoesView({ filtered }: { filtered: typeof licences }) {
+  // Flatten all licences with issues into renewal items, sorted by urgency score
+  const items = useMemo(() => {
+    const companyScores = Object.fromEntries(
+      companies.map(c => [c.id, c.profile.score_urgencia])
+    );
+
+    const rows: {
+      id: string;
+      company_id: string;
+      company_name: string;
+      municipio: string;
+      tipo: string;
+      status: string;
+      valid_until: string | null;
+      score: number;
+    }[] = [];
+
+    filtered.forEach(l => {
+      LICENCE_TYPES.forEach(t => {
+        const val = l[t.key] as string;
+        const s = getLicenceStatus(val);
+        if (val === "Não exigido") return;
+        if (s === "danger" || s === "warn") {
+          rows.push({
+            id: `${l.id}-${String(t.key)}`,
+            company_id: l.company_id,
+            company_name: l.company_name,
+            municipio: l.municipio,
+            tipo: t.label,
+            status: val,
+            valid_until: l[t.dateKey] as string | null,
+            score: companyScores[l.company_id] ?? 0,
+          });
+        }
+      });
+    });
+
+    return rows.sort((a, b) => {
+      // danger first, then by score desc
+      const sa = getLicenceStatus(a.status) === "danger" ? 0 : 1;
+      const sb = getLicenceStatus(b.status) === "danger" ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      return b.score - a.score;
+    });
+  }, [filtered]);
+
+  if (items.length === 0) {
+    return (
+      <div className="ec-card ec-empty-state">
+        <ShieldCheck size={32} />
+        <p>Nenhuma renovação urgente no momento.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Summary */}
+      <div className="ec-tipo-summary">
+        <span className="ec-tipo-chip ec-status ec-s-danger">
+          Vencidas <b>{items.filter(i => getLicenceStatus(i.status) === "danger").length}</b>
+        </span>
+        <span className="ec-tipo-chip ec-status ec-s-warn">
+          Vencendo <b>{items.filter(i => getLicenceStatus(i.status) === "warn").length}</b>
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 11, color: "#94a3b8" }}>
+          Ordenado por score de urgência
+        </span>
+      </div>
+
+      <div className="ec-card">
+        <div className="ec-urgency-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Score</th>
+                <th>Empresa</th>
+                <th>Município</th>
+                <th>Tipo de Licença</th>
+                <th>Validade</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(r => (
+                <tr key={r.id}>
+                  <td>
+                    <span className={`ec-score-badge ${r.score >= 80 ? "high" : r.score >= 50 ? "mid" : "low"}`}>
+                      {r.score}
+                    </span>
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{r.company_name}</td>
+                  <td>{r.municipio}</td>
+                  <td>
+                    <span className="ec-tipo-tag">{r.tipo}</span>
+                  </td>
+                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{r.valid_until ?? "—"}</td>
+                  <td><StatusBadge value={r.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+type SubTab = "geral" | "por-tipo" | "renovacoes";
+
 export default function LicencasTab() {
+  const [subTab, setSubTab] = useState<SubTab>("geral");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
@@ -101,13 +313,9 @@ export default function LicencasTab() {
       else if (sortBy === "municipio") cmp = a.municipio.localeCompare(b.municipio);
       else if (sortBy === "status") cmp = overallStatus(a) - overallStatus(b);
       else if (sortBy === "venc_func") {
-        const da = a.alvara_funcionamento_valid_until ?? "9999";
-        const db = b.alvara_funcionamento_valid_until ?? "9999";
-        cmp = da.localeCompare(db);
+        cmp = (a.alvara_funcionamento_valid_until ?? "9999").localeCompare(b.alvara_funcionamento_valid_until ?? "9999");
       } else if (sortBy === "venc_san") {
-        const da = a.alvara_vig_sanitaria_valid_until ?? "9999";
-        const db = b.alvara_vig_sanitaria_valid_until ?? "9999";
-        cmp = da.localeCompare(db);
+        cmp = (a.alvara_vig_sanitaria_valid_until ?? "9999").localeCompare(b.alvara_vig_sanitaria_valid_until ?? "9999");
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -118,9 +326,17 @@ export default function LicencasTab() {
   const vencidas = filtered.filter(l => LICENCE_TYPES.some(t => l[t.key] === "Vencido")).length;
   const vencendo = filtered.filter(l => LICENCE_TYPES.some(t => l[t.key] === "Vencendo")).length;
   const pendentes = filtered.filter(l => LICENCE_TYPES.some(t => l[t.key] === "Pendente" || l[t.key] === "Em andamento")).length;
+  const renovacoesUrgentes = filtered.reduce((acc, l) => {
+    LICENCE_TYPES.forEach(t => {
+      const s = getLicenceStatus(l[t.key] as string);
+      if (s === "danger" || s === "warn") acc++;
+    });
+    return acc;
+  }, 0);
 
   return (
     <div className="ec-tab-content">
+      {/* KPIs */}
       <div className="ec-grid-hero">
         <div className="ec-kpi">
           <div className="ec-kpi-top">
@@ -142,12 +358,41 @@ export default function LicencasTab() {
         </div>
         <div className="ec-kpi">
           <div className="ec-kpi-top">
-            <div><label>Pendentes / Em andamento</label><div className="ec-value">{pendentes}</div></div>
-            <div className="ec-kpi-icon"><ShieldCheck size={20} strokeWidth={1.6} /></div>
+            <div><label>Renovações urgentes</label><div className="ec-value">{renovacoesUrgentes}</div></div>
+            <div className="ec-kpi-icon ec-kpi-icon-red"><RefreshCw size={20} strokeWidth={1.6} /></div>
           </div>
         </div>
       </div>
 
+      {/* Sub-tabs */}
+      <div className="ec-subtab-bar">
+        <button
+          className={`ec-subtab-btn${subTab === "geral" ? " active" : ""}`}
+          onClick={() => setSubTab("geral")}
+        >
+          <LayoutGrid size={13} strokeWidth={1.6} />
+          Visão Geral
+        </button>
+        <button
+          className={`ec-subtab-btn${subTab === "por-tipo" ? " active" : ""}`}
+          onClick={() => setSubTab("por-tipo")}
+        >
+          <ShieldCheck size={13} strokeWidth={1.6} />
+          Por Tipo
+        </button>
+        <button
+          className={`ec-subtab-btn${subTab === "renovacoes" ? " active" : ""}`}
+          onClick={() => setSubTab("renovacoes")}
+        >
+          <RefreshCw size={13} strokeWidth={1.6} />
+          Renovações
+          {renovacoesUrgentes > 0 && (
+            <span className="ec-subtab-badge">{renovacoesUrgentes}</span>
+          )}
+        </button>
+      </div>
+
+      {/* Filters (shared across sub-tabs) */}
       <TabFilters
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -162,9 +407,15 @@ export default function LicencasTab() {
         sortDir={sortDir}
         onSortChange={handleSortChange}
         resultCount={filtered.length}
+        hideViewToggle={subTab !== "geral"}
       />
 
-      {filtered.length === 0 ? (
+      {/* Content */}
+      {subTab === "por-tipo" ? (
+        <PorTipoView filtered={filtered} />
+      ) : subTab === "renovacoes" ? (
+        <RenovacoesView filtered={filtered} />
+      ) : filtered.length === 0 ? (
         <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhuma licença encontrada.</p></div>
       ) : viewMode === "table" ? (
         <div className="ec-card">
