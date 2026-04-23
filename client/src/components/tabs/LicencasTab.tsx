@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { licences, companies, getLicenceStatus } from "@/data/mockData";
 import { ScrollText, ShieldAlert, ShieldCheck, Clock, SearchX, RefreshCw, LayoutGrid } from "lucide-react";
 import TabFilters, { ViewMode, ActiveFilters, SortDir } from "@/components/TabFilters";
+import LicenseEditModal from "@/components/LicenseEditModal";
 
 const FILTERS = [
   {
@@ -67,7 +68,7 @@ function StatusBadge({ value }: { value: string }) {
 }
 
 // ─── Sub-aba: Por Tipo ───────────────────────────────────────────────────────
-function PorTipoView({ filtered }: { filtered: typeof licences }) {
+function PorTipoView({ filtered, setEditingLicense }: { filtered: typeof licences; setEditingLicense: (l: { company: string; licenseType: string; licenseId: string } | null) => void }) {
   const [activeTipo, setActiveTipo] = useState<string>("Funcionamento");
 
   const tipoData = useMemo(() => {
@@ -154,7 +155,7 @@ function PorTipoView({ filtered }: { filtered: typeof licences }) {
                   <td style={{ fontWeight: 600 }}>{r.company_name}</td>
                   <td>{r.municipio}</td>
                   <td style={{ fontFamily: "monospace", fontSize: 12 }}>{r.valid_until ?? "—"}</td>
-                  <td><StatusBadge value={r.status} /></td>
+                  <td><button style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setEditingLicense({ company: r.company_name, licenseType: activeTipo, licenseId: r.id })}><StatusBadge value={r.status} /></button></td>
                 </tr>
               ))}
             </tbody>
@@ -166,7 +167,7 @@ function PorTipoView({ filtered }: { filtered: typeof licences }) {
 }
 
 // ─── Sub-aba: Renovações ─────────────────────────────────────────────────────
-function RenovacoesView({ filtered }: { filtered: typeof licences }) {
+function RenovacoesView({ filtered, setEditingLicense }: { filtered: typeof licences; setEditingLicense: (l: { company: string; licenseType: string; licenseId: string } | null) => void }) {
   // Flatten all licences with issues into renewal items, sorted by urgency score
   const items = useMemo(() => {
     const companyScores = Object.fromEntries(
@@ -264,7 +265,7 @@ function RenovacoesView({ filtered }: { filtered: typeof licences }) {
                     <span className="ec-tipo-tag">{r.tipo}</span>
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: 12 }}>{r.valid_until ?? "—"}</td>
-                  <td><StatusBadge value={r.status} /></td>
+                  <td><button style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setEditingLicense({ company: r.company_name, licenseType: r.tipo, licenseId: r.id })}><StatusBadge value={r.status} /></button></td>
                 </tr>
               ))}
             </tbody>
@@ -285,6 +286,7 @@ export default function LicencasTab() {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
   const [sortBy, setSortBy] = useState("status");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [editingLicense, setEditingLicense] = useState<{ company: string; licenseType: string; licenseId: string } | null>(null);
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters(prev => ({ ...prev, [key]: values }));
@@ -412,9 +414,9 @@ export default function LicencasTab() {
 
       {/* Content */}
       {subTab === "por-tipo" ? (
-        <PorTipoView filtered={filtered} />
+        <PorTipoView filtered={filtered} setEditingLicense={setEditingLicense} />
       ) : subTab === "renovacoes" ? (
-        <RenovacoesView filtered={filtered} />
+        <RenovacoesView filtered={filtered} setEditingLicense={setEditingLicense} />
       ) : filtered.length === 0 ? (
         <div className="ec-card ec-empty-state"><SearchX size={32} /><p>Nenhuma licença encontrada.</p></div>
       ) : viewMode === "table" ? (
@@ -480,6 +482,15 @@ export default function LicencasTab() {
             </div>
           ))}
         </div>
+      )}
+
+      {editingLicense && (
+        <LicenseEditModal
+          company={editingLicense.company}
+          licenseType={editingLicense.licenseType}
+          licenseId={editingLicense.licenseId}
+          onClose={() => setEditingLicense(null)}
+        />
       )}
     </div>
   );
