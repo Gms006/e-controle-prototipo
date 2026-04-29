@@ -484,3 +484,168 @@ export function getCertStatus(notAfter: string): { label: string; status: "ok" |
   if (diffDays <= 30) return { label: `Vence em ${diffDays}d`, status: "warn" };
   return { label: "Válido", status: "ok" };
 }
+
+
+// ─── Jobs / Automações ───
+export interface Job {
+  id: string;
+  job_type: "receitaws_bulk_sync" | "tax_portal_sync" | "licence_scan_full" | "notification_operational_scan";
+  status: "queued" | "running" | "completed" | "failed" | "paused";
+  total: number;
+  processed: number;
+  ok_count: number;
+  error_count: number;
+  skipped_count: number;
+  current_cnpj: string | null;
+  current_company_id: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  errors: { error: string; cnpj?: string; timestamp?: string }[];
+  meta: Record<string, any>;
+}
+
+export const jobs: Job[] = [
+  {
+    id: "job-001",
+    job_type: "receitaws_bulk_sync",
+    status: "running",
+    total: 1284,
+    processed: 847,
+    ok_count: 821,
+    error_count: 26,
+    skipped_count: 0,
+    current_cnpj: "12.345.678/0001-90",
+    current_company_id: "c1",
+    started_at: "2026-04-23T14:30:00Z",
+    finished_at: null,
+    errors: [
+      { error: "Timeout na consulta", cnpj: "23.456.789/0001-01", timestamp: "2026-04-23T14:45:00Z" },
+      { error: "CNPJ não encontrado na RFB", cnpj: "34.567.890/0001-12", timestamp: "2026-04-23T14:50:00Z" },
+    ],
+    meta: {
+      dry_run: false,
+      only_missing: false,
+      started_by_user_id: "user-123",
+      changes_summary: { updated: 821, created: 0, unchanged: 26 },
+    },
+  },
+  {
+    id: "job-002",
+    job_type: "tax_portal_sync",
+    status: "completed",
+    total: 412,
+    processed: 412,
+    ok_count: 398,
+    error_count: 14,
+    skipped_count: 0,
+    current_cnpj: null,
+    current_company_id: null,
+    started_at: "2026-04-23T10:15:00Z",
+    finished_at: "2026-04-23T12:45:00Z",
+    errors: [
+      { error: "Portal indisponível", cnpj: "45.678.901/0001-23", timestamp: "2026-04-23T11:20:00Z" },
+    ],
+    meta: {
+      dry_run: false,
+      trigger_type: "manual",
+      municipio: "Anápolis",
+      limit: 500,
+      relogin_count: 2,
+      summary: { synced: 398, failed: 14 },
+      started_by_user_id: "user-456",
+    },
+  },
+  {
+    id: "job-003",
+    job_type: "licence_scan_full",
+    status: "running",
+    total: 1284,
+    processed: 312,
+    ok_count: 298,
+    error_count: 14,
+    skipped_count: 0,
+    current_cnpj: null,
+    current_company_id: null,
+    started_at: "2026-04-23T16:00:00Z",
+    finished_at: null,
+    errors: [],
+    meta: {},
+  },
+  {
+    id: "job-004",
+    job_type: "notification_operational_scan",
+    status: "completed",
+    total: 1284,
+    processed: 1284,
+    ok_count: 1247,
+    error_count: 37,
+    skipped_count: 0,
+    current_cnpj: null,
+    current_company_id: null,
+    started_at: "2026-04-23T08:00:00Z",
+    finished_at: "2026-04-23T09:30:00Z",
+    errors: [
+      { error: "Notificação duplicada", timestamp: "2026-04-23T08:15:00Z" },
+      { error: "Erro ao processar", timestamp: "2026-04-23T08:45:00Z" },
+    ],
+    meta: {
+      started_by_user_id: "user-789",
+    },
+  },
+  {
+    id: "job-005",
+    job_type: "receitaws_bulk_sync",
+    status: "failed",
+    total: 500,
+    processed: 156,
+    ok_count: 142,
+    error_count: 14,
+    skipped_count: 0,
+    current_cnpj: "56.789.012/0001-34",
+    current_company_id: "c5",
+    started_at: "2026-04-22T22:00:00Z",
+    finished_at: "2026-04-22T22:45:00Z",
+    errors: [
+      { error: "Conexão perdida com RFB", timestamp: "2026-04-22T22:30:00Z" },
+      { error: "Timeout após 3 tentativas", timestamp: "2026-04-22T22:45:00Z" },
+    ],
+    meta: {
+      dry_run: false,
+      only_missing: true,
+      started_by_user_id: "user-123",
+      changes_summary: { updated: 142, created: 0, unchanged: 14 },
+    },
+  },
+];
+
+export function getJobTypeLabel(type: Job["job_type"]): string {
+  const labels: Record<Job["job_type"], string> = {
+    receitaws_bulk_sync: "Receita WS Bulk Sync",
+    tax_portal_sync: "Tax Portal Sync",
+    licence_scan_full: "Licence Scan Full",
+    notification_operational_scan: "Notification Operational Scan",
+  };
+  return labels[type];
+}
+
+export function getJobStatusColor(status: Job["status"]): string {
+  const colors: Record<Job["status"], string> = {
+    queued: "#9CA3AF",
+    running: "#3B82F6",
+    completed: "#10B981",
+    failed: "#EF4444",
+    paused: "#F59E0B",
+  };
+  return colors[status];
+}
+
+export function getJobStatusLabel(status: Job["status"]): string {
+  const labels: Record<Job["status"], string> = {
+    queued: "Aguardando",
+    running: "Em execução",
+    completed: "Concluído",
+    failed: "Falhou",
+    paused: "Pausado",
+  };
+  return labels[status];
+}

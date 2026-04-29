@@ -3279,3 +3279,348 @@ body {
 .ec-form-detail-row span:last-child {
   color: #1e293b;
 }
+
+
+/* ─── Automações Tab ─── */
+.ec-automacoes-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.ec-automacoes-kpi {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ec-automacoes-kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ec-automacoes-kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.ec-automacoes-kpi-status {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+}
+
+.ec-automacoes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ec-job-item {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ec-job-item:hover {
+  border-color: var(--color-primary);
+  background: var(--color-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ec-job-item-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-secondary);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.ec-job-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ec-job-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-foreground);
+  margin-bottom: 4px;
+}
+
+.ec-job-item-meta {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+  display: flex;
+  gap: 12px;
+}
+
+.ec-job-item-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--color-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.ec-job-item-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s;
+}
+
+.ec-job-item-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ec-job-item-status.running {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.ec-job-item-status.completed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.ec-job-item-status.failed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ec-job-item-status.queued {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+/* ─── Job Detail Modal ─── */
+.ec-job-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.ec-job-detail-content {
+  background: var(--color-card);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.ec-job-detail-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ec-job-detail-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.ec-job-detail-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-muted-foreground);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ec-job-detail-close:hover {
+  color: var(--color-foreground);
+}
+
+.ec-job-detail-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ec-job-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ec-job-detail-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-muted-foreground);
+}
+
+.ec-job-detail-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ec-job-detail-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--color-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ec-job-detail-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s;
+}
+
+.ec-job-detail-progress-text {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  display: flex;
+  justify-content: space-between;
+}
+
+.ec-job-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ec-job-detail-stat {
+  background: var(--color-secondary);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ec-job-detail-stat-label {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+}
+
+.ec-job-detail-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.ec-job-detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ec-job-detail-timeline-item {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.ec-job-detail-timeline-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.ec-job-detail-timeline-content {
+  flex: 1;
+}
+
+.ec-job-detail-timeline-time {
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+}
+
+.ec-job-detail-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ec-job-detail-error-item {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+  color: #dc2626;
+}
+
+.ec-job-detail-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.ec-job-detail-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ec-job-detail-btn:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-primary);
+}
+
+.ec-job-detail-btn.primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border-color: var(--color-primary);
+}
+
+.ec-job-detail-btn.primary:hover {
+  opacity: 0.9;
+}

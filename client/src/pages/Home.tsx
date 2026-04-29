@@ -24,8 +24,9 @@ import LicencasTab from "@/components/tabs/LicencasTab";
 import TaxasTab from "@/components/tabs/TaxasTab";
 import ProcessosTab from "@/components/tabs/ProcessosTab";
 import CertificadosTab from "@/components/tabs/CertificadosTab";
+import AutomacoesTab from "@/components/tabs/AutomacoesTab";
 
-type TabKey = "painel" | "empresas" | "licencas" | "taxas" | "processos" | "certificados";
+type TabKey = "painel" | "empresas" | "licencas" | "taxas" | "processos" | "certificados" | "automacoes";
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: "painel", label: "Painel" },
@@ -34,6 +35,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "taxas", label: "Taxas" },
   { key: "processos", label: "Processos" },
   { key: "certificados", label: "Certificados" },
+  { key: "automacoes", label: "Automações" },
 ];
 
 const sidebarNav: { key: TabKey; icon: typeof LayoutDashboard; label: string; count: string }[] = [
@@ -43,6 +45,7 @@ const sidebarNav: { key: TabKey; icon: typeof LayoutDashboard; label: string; co
   { key: "taxas", icon: Receipt, label: "Taxas", count: "148" },
   { key: "processos", icon: FolderKanban, label: "Processos", count: "94" },
   { key: "certificados", icon: ShieldCheck, label: "Certificados", count: "126" },
+  { key: "automacoes", icon: Bot, label: "Automações", count: "5" },
 ];
 
 const breadcrumbMap: Record<TabKey, { path: string; title: string }> = {
@@ -52,6 +55,7 @@ const breadcrumbMap: Record<TabKey, { path: string; title: string }> = {
   taxas: { path: "Taxas / Visão geral", title: "Gestão de taxas municipais" },
   processos: { path: "Processos / Kanban", title: "Processos regulatórios" },
   certificados: { path: "Certificados / Visão geral", title: "Certificados digitais" },
+  automacoes: { path: "Automações / Jobs", title: "Gestão de automações" },
 };
 
 export default function Home() {
@@ -270,6 +274,7 @@ export default function Home() {
             {activeTab === "taxas" && <TaxasTab />}
             {activeTab === "processos" && <ProcessosTab />}
             {activeTab === "certificados" && <CertificadosTab />}
+            {activeTab === "automacoes" && <AutomacoesTab />}
           </section>
         </div>
       </main>
